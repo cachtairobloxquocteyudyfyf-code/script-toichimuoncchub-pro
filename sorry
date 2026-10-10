@@ -1,0 +1,545 @@
+-- ========================================================
+-- 2k13 - Ultimate Optimized Hub for Delta Executor
+-- ========================================================
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local VirtualUser = game:GetService("VirtualUser")
+local Lighting = game:GetService("Lighting")
+local CoreGui = game:GetService("CoreGui")
+
+local LocalPlayer = Players.LocalPlayer or Players.PlayerAdded:Wait()
+local Camera = workspace.CurrentCamera
+
+-- Xóa UI cũ nếu có tránh bị trùng lặp
+pcall(function()
+    if CoreGui:FindFirstChild("2k13") then
+        CoreGui["2k13"]:Destroy()
+    end
+end)
+
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "2k13"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.Parent = CoreGui
+
+local MainFrame = Instance.new("Frame")
+MainFrame.Size = UDim2.new(0, 320, 0, 560)
+MainFrame.Position = UDim2.new(0.5, -160, 0.5, -280)
+MainFrame.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
+MainFrame.BackgroundTransparency = 0
+MainFrame.BorderSizePixel = 0
+MainFrame.Visible = true
+MainFrame.Parent = ScreenGui
+
+local MainStroke = Instance.new("UIStroke")
+MainStroke.Color = Color3.fromRGB(0, 255, 150)
+MainStroke.Thickness = 2
+MainStroke.Parent = MainFrame
+
+local MainCorner = Instance.new("UICorner")
+MainCorner.CornerRadius = UDim.new(0, 12)
+MainCorner.Parent = MainFrame
+
+-- Nút thu nhỏ / mở nhanh Menu
+local OpenBtn = Instance.new("TextButton")
+OpenBtn.Size = UDim2.new(0, 55, 0, 55)
+OpenBtn.Position = UDim2.new(0, 20, 0, 150)
+OpenBtn.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
+OpenBtn.Text = "2k13"
+OpenBtn.TextColor3 = Color3.fromRGB(0, 255, 150)
+OpenBtn.TextSize = 12
+OpenBtn.Font = Enum.Font.GothamBold
+OpenBtn.Visible = false
+OpenBtn.Parent = ScreenGui
+
+local OpenCorner = Instance.new("UICorner", OpenBtn)
+OpenCorner.CornerRadius = UDim.new(0, 10)
+local OpenStroke = Instance.new("UIStroke", OpenBtn)
+OpenStroke.Color = Color3.fromRGB(0, 255, 150)
+OpenStroke.Thickness = 2
+
+-- Kéo thả nút mở Menu
+local btnDragging, btnDragStart, btnStartPos
+OpenBtn.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        btnDragging = true
+        btnDragStart = input.Position
+        btnStartPos = OpenBtn.Position
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if btnDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+        local delta = input.Position - btnDragStart
+        OpenBtn.Position = UDim2.new(btnStartPos.X.Scale, btnStartPos.X.Offset + delta.X, btnStartPos.Y.Scale, btnStartPos.Y.Offset + delta.Y)
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        btnDragging = false
+    end
+end)
+
+-- Thanh tiêu đề
+local TitleBar = Instance.new("Frame")
+TitleBar.Size = UDim2.new(1, 0, 0, 35)
+TitleBar.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+TitleBar.BorderSizePixel = 0
+TitleBar.Parent = MainFrame
+Instance.new("UICorner", TitleBar).CornerRadius = UDim.new(0, 12)
+
+local TitleText = Instance.new("TextLabel")
+TitleText.Size = UDim2.new(1, -40, 1, 0)
+TitleText.Position = UDim2.new(0, 10, 0, 0)
+TitleText.BackgroundTransparency = 1
+TitleText.Text = "2k13"
+TitleText.TextColor3 = Color3.fromRGB(0, 255, 150)
+TitleText.TextSize = 13
+TitleText.Font = Enum.Font.GothamBold
+TitleText.Parent = TitleBar
+
+local CloseBtn = Instance.new("TextButton")
+CloseBtn.Size = UDim2.new(0, 26, 0, 26)
+CloseBtn.Position = UDim2.new(1, -30, 0, 4)
+CloseBtn.BackgroundTransparency = 1
+CloseBtn.Text = "X"
+CloseBtn.TextColor3 = Color3.fromRGB(255, 80, 80)
+CloseBtn.TextSize = 13
+CloseBtn.Font = Enum.Font.GothamBold
+CloseBtn.Parent = TitleBar
+
+CloseBtn.MouseButton1Click:Connect(function()
+    MainFrame.Visible = false
+    OpenBtn.Visible = true
+end)
+
+OpenBtn.MouseButton1Click:Connect(function()
+    MainFrame.Visible = true
+    OpenBtn.Visible = false
+end)
+
+-- Kéo thả bảng chính
+local mainDragging, mainDragStart, mainStartPos
+TitleBar.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        mainDragging = true
+        mainDragStart = input.Position
+        mainStartPos = MainFrame.Position
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if mainDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+        local delta = input.Position - mainDragStart
+        MainFrame.Position = UDim2.new(mainStartPos.X.Scale, mainStartPos.X.Offset + delta.X, mainStartPos.Y.Scale, mainStartPos.Y.Offset + delta.Y)
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        mainDragging = false
+    end
+end)
+
+-- Bảng thông tin cá nhân & thống kê mạng
+local InfoBox = Instance.new("Frame")
+InfoBox.Size = UDim2.new(1, -16, 0, 65)
+InfoBox.Position = UDim2.new(0, 8, 0, 42)
+InfoBox.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+InfoBox.BorderSizePixel = 0
+InfoBox.Parent = MainFrame
+Instance.new("UICorner", InfoBox).CornerRadius = UDim.new(0, 6)
+
+local NameLabel = Instance.new("TextLabel")
+NameLabel.Size = UDim2.new(0.5, -4, 0, 20)
+NameLabel.Position = UDim2.new(0, 6, 0, 2)
+NameLabel.BackgroundTransparency = 1
+NameLabel.Text = "👤 " .. LocalPlayer.Name
+NameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+NameLabel.TextSize = 10
+NameLabel.Font = Enum.Font.GothamBold
+NameLabel.TextXAlignment = Enum.TextXAlignment.Left
+NameLabel.Parent = InfoBox
+
+local IdLabel = Instance.new("TextLabel")
+IdLabel.Size = UDim2.new(0.5, -4, 0, 20)
+IdLabel.Position = UDim2.new(0.5, 0, 0, 2)
+IdLabel.BackgroundTransparency = 1
+IdLabel.Text = "🆔 ID: " .. tostring(LocalPlayer.UserId)
+IdLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+IdLabel.TextSize = 10
+IdLabel.Font = Enum.Font.GothamBold
+IdLabel.TextXAlignment = Enum.TextXAlignment.Left
+IdLabel.Parent = InfoBox
+
+local ScriptTimeLabel = Instance.new("TextLabel")
+ScriptTimeLabel.Size = UDim2.new(1, -12, 0, 18)
+ScriptTimeLabel.Position = UDim2.new(0, 6, 0, 22)
+ScriptTimeLabel.BackgroundTransparency = 1
+ScriptTimeLabel.Text = "⏱️ Time: 00:00:00"
+ScriptTimeLabel.TextColor3 = Color3.fromRGB(0, 255, 150)
+ScriptTimeLabel.TextSize = 10
+ScriptTimeLabel.Font = Enum.Font.GothamBold
+ScriptTimeLabel.TextXAlignment = Enum.TextXAlignment.Left
+ScriptTimeLabel.Parent = InfoBox
+
+local NetworkStatsLabel = Instance.new("TextLabel")
+NetworkStatsLabel.Size = UDim2.new(1, -12, 0, 18)
+NetworkStatsLabel.Position = UDim2.new(0, 6, 0, 42)
+NetworkStatsLabel.BackgroundTransparency = 1
+NetworkStatsLabel.Text = "📡 Ping: -- ms | 🖥️ FPS: --"
+NetworkStatsLabel.TextColor3 = Color3.fromRGB(80, 200, 255)
+NetworkStatsLabel.TextSize = 10
+NetworkStatsLabel.Font = Enum.Font.GothamBold
+NetworkStatsLabel.TextXAlignment = Enum.TextXAlignment.Left
+NetworkStatsLabel.Parent = InfoBox
+
+-- Bảng chọn Player để bám
+local PlayerSelectBox = Instance.new("Frame")
+PlayerSelectBox.Size = UDim2.new(1, -16, 0, 50)
+PlayerSelectBox.Position = UDim2.new(0, 8, 0, 112)
+PlayerSelectBox.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+PlayerSelectBox.BorderSizePixel = 0
+PlayerSelectBox.Parent = MainFrame
+Instance.new("UICorner", PlayerSelectBox).CornerRadius = UDim.new(0, 6)
+
+local AvatarImg = Instance.new("ImageLabel")
+AvatarImg.Size = UDim2.new(0, 40, 0, 40)
+AvatarImg.Position = UDim2.new(0, 5, 0, 5)
+AvatarImg.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+AvatarImg.Image = "rbxassetid://0"
+AvatarImg.Parent = PlayerSelectBox
+Instance.new("UICorner", AvatarImg).CornerRadius = UDim.new(1, 0)
+
+local TargetBox = Instance.new("TextBox")
+TargetBox.Size = UDim2.new(1, -55, 0, 40)
+TargetBox.Position = UDim2.new(0, 50, 0, 5)
+TargetBox.BackgroundTransparency = 1
+TargetBox.PlaceholderText = "🔍 Gõ tên Player để Tween bám..."
+TargetBox.PlaceholderColor3 = Color3.fromRGB(150, 150, 150)
+TargetBox.Text = ""
+TargetBox.TextColor3 = Color3.fromRGB(0, 255, 150)
+TargetBox.TextSize = 10
+TargetBox.Font = Enum.Font.GothamBold
+TargetBox.TextXAlignment = Enum.TextXAlignment.Left
+TargetBox.Parent = PlayerSelectBox
+
+-- Hàm tạo nút bấm nhanh
+local function createBtn(txt, clr, pos, sz)
+    local b = Instance.new("TextButton")
+    b.Size = sz
+    b.Position = pos
+    b.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    b.Text = txt
+    b.TextColor3 = clr
+    b.Font = Enum.Font.GothamBold
+    b.TextSize = 10
+    b.Parent = MainFrame
+    Instance.new("UICorner", b).CornerRadius = UDim.new(0, 6)
+    return b
+end
+
+local TweenToggleBtn = createBtn("🎯 [OFF] Tween Follow", Color3.fromRGB(255,80,80), UDim2.new(0,8,0,168), UDim2.new(0,147,0,32))
+local ResetPlayerTargetBtn = createBtn("🔄 Clear / Load Player", Color3.fromRGB(0,200,255), UDim2.new(0,165,0,168), UDim2.new(0,147,0,32))
+local SaveBtn = createBtn("💾 Save Position", Color3.fromRGB(255,255,255), UDim2.new(0,8,0,206), UDim2.new(0,147,0,32))
+local TpBtn = createBtn("⚡ Teleport Once", Color3.fromRGB(255,255,255), UDim2.new(0,165,0,206), UDim2.new(0,147,0,32))
+local AutoTpBtn = createBtn("🔄 Auto TP Loop", Color3.fromRGB(255,80,80), UDim2.new(0,8,0,244), UDim2.new(0,147,0,32))
+local AutoWalkBtn = createBtn("🚶 Auto Walk", Color3.fromRGB(255,80,80), UDim2.new(0,165,0,244), UDim2.new(0,147,0,32))
+local FlyBtn = createBtn("🕊️ [OFF] Fly V3", Color3.fromRGB(255,80,80), UDim2.new(0,8,0,282), UDim2.new(0,147,0,32))
+local NoclipBtn = createBtn("👻 [OFF] Noclip", Color3.fromRGB(255,80,80), UDim2.new(0,165,0,282), UDim2.new(0,147,0,32))
+local EspBtn = createBtn("👁️ [OFF] ESP Player", Color3.fromRGB(255,80,80), UDim2.new(0,8,0,320), UDim2.new(0,147,0,32))
+local FullbrightBtn = createBtn("💡 [OFF] Fullbright", Color3.fromRGB(255,80,80), UDim2.new(0,165,0,320), UDim2.new(0,147,0,32))
+
+local SpeedBox = Instance.new("TextBox")
+SpeedBox.Size = UDim2.new(0, 147, 0, 32)
+SpeedBox.Position = UDim2.new(0, 8, 0, 358)
+SpeedBox.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+SpeedBox.PlaceholderText = "⚡ WalkSpeed (16-100)..."
+SpeedBox.PlaceholderColor3 = Color3.fromRGB(150, 150, 150)
+SpeedBox.Text = ""
+SpeedBox.TextColor3 = Color3.fromRGB(0, 255, 150)
+SpeedBox.TextSize = 10
+SpeedBox.Font = Enum.Font.GothamBold
+SpeedBox.Parent = MainFrame
+Instance.new("UICorner", SpeedBox).CornerRadius = UDim.new(0, 6)
+
+local AntiAfkBtn = createBtn("🛡️ Anti-AFK [ON]", Color3.fromRGB(255,255,255), UDim2.new(0,165,0,358), UDim2.new(0,147,0,32))
+AntiAfkBtn.BackgroundColor3 = Color3.fromRGB(0,160,90)
+
+local ResetCharBtn = createBtn("💀 Reset Character", Color3.fromRGB(255,255,255), UDim2.new(0,8,0,396), UDim2.new(1,-16,0,32))
+ResetCharBtn.BackgroundColor3 = Color3.fromRGB(180,40,40)
+
+local StatusLbl = Instance.new("TextLabel")
+StatusLbl.Size = UDim2.new(1, -16, 0, 24)
+StatusLbl.Position = UDim2.new(0, 8, 0, 434)
+StatusLbl.BackgroundTransparency = 1
+StatusLbl.Text = "Trạng thái: 2k13 đã sẵn sàng!"
+StatusLbl.TextColor3 = Color3.fromRGB(200, 200, 200)
+StatusLbl.TextSize = 10
+StatusLbl.Font = Enum.Font.GothamBold
+StatusLbl.Parent = MainFrame
+
+-- === XỬ LÝ LOGIC ===
+local currentTargetPlayer = nil
+local isTweenRunning, isFlying, isEspRunning, isFullbrightRunning = false, false, false, false
+local tweenConnection, flyConnection, espConnection, speedConnection
+local bodyVelocity, bodyGyro = nil, nil
+local flySpeed = 50
+local espDrawings = {}
+
+local oldBrightness = Lighting.Brightness
+local oldClockTime = Lighting.ClockTime
+local oldFogEnd = Lighting.FogEnd
+local oldGlobalShadows = Lighting.GlobalShadows
+
+-- Vòng lặp cập nhật thời gian, Ping và FPS
+local scriptStartTime = tick()
+task.spawn(function()
+    while true do
+        pcall(function()
+            local elapsed = math.floor(tick() - scriptStartTime)
+            ScriptTimeLabel.Text = string.format("⏱️ Time: %02d:%02d:%02d", math.floor(elapsed/3600), math.floor((elapsed%3600)/60), elapsed%60)
+            
+            local pingMs = math.floor(LocalPlayer:GetNetworkPing() * 1000)
+            local fpsVal = math.floor(1 / RunService.RenderStepped:Wait())
+            NetworkStatsLabel.Text = string.format("📡 Ping: %d ms | 🖥️ FPS: %d", pingMs, fpsVal)
+        end)
+        task.wait(1)
+    end
+end)
+
+-- Anti-AFK
+LocalPlayer.Idled:Connect(function()
+    pcall(function()
+        VirtualUser:Button2Down(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
+        task.wait(1)
+        VirtualUser:Button2Up(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
+    end)
+end)
+
+-- Chỉnh tốc độ WalkSpeed
+SpeedBox.FocusLost:Connect(function()
+    pcall(function()
+        local num = tonumber(SpeedBox.Text)
+        if num then
+            if num < 16 then num = 16 end
+            if num > 100 then num = 100 end
+            SpeedBox.Text = tostring(num)
+            
+            if speedConnection then speedConnection:Disconnect() end
+            speedConnection = RunService.RenderStepped:Connect(function()
+                if LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
+                    LocalPlayer.Character:FindFirstChildOfClass("Humanoid").WalkSpeed = num
+                end
+            end)
+            StatusLbl.Text = "Trạng thái: Tốc độ = " .. tostring(num) .. " ⚡"
+            StatusLbl.TextColor3 = Color3.fromRGB(0, 255, 150)
+        end
+    end)
+end)
+
+-- Fullbright
+FullbrightBtn.MouseButton1Click:Connect(function()
+    isFullbrightRunning = not isFullbrightRunning
+    if isFullbrightRunning then
+        FullbrightBtn.Text = "💡 [ON] Fullbright"
+        FullbrightBtn.TextColor3 = Color3.fromRGB(0, 255, 150)
+        Lighting.Brightness = 2
+        Lighting.ClockTime = 14
+        Lighting.FogEnd = 100000
+        Lighting.GlobalShadows = false
+        StatusLbl.Text = "Trạng thái: Đã bật Fullbright 💡"
+    else
+        FullbrightBtn.Text = "💡 [OFF] Fullbright"
+        FullbrightBtn.TextColor3 = Color3.fromRGB(255, 80, 80)
+        Lighting.Brightness = oldBrightness
+        Lighting.ClockTime = oldClockTime
+        Lighting.FogEnd = oldFogEnd
+        Lighting.GlobalShadows = oldGlobalShadows
+        StatusLbl.Text = "Trạng thái: Đã tắt Fullbright."
+    end
+end)
+
+-- ESP Player
+EspBtn.MouseButton1Click:Connect(function()
+    isEspRunning = not isEspRunning
+    if isEspRunning then
+        EspBtn.Text = "👁️ [ON] ESP Player"
+        EspBtn.TextColor3 = Color3.fromRGB(0, 255, 150)
+        StatusLbl.Text = "Trạng thái: Đã bật ESP 👁️"
+
+        espConnection = RunService.RenderStepped:Connect(function()
+            pcall(function()
+                for _, p in pairs(Players:GetPlayers()) do
+                    if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+                        local hrp = p.Character.HumanoidRootPart
+                        local hum = p.Character:FindFirstChildOfClass("Humanoid")
+                        local vector, onScreen = Camera:WorldToViewportPoint(hrp.Position)
+                        
+                        if not espDrawings[p] then
+                            local text = Drawing.new("Text")
+                            text.Visible = false
+                            text.Center = true
+                            text.Outline = true
+                            text.Font = 2
+                            text.Size = 14
+                            text.Color = Color3.fromRGB(0, 255, 150)
+                            espDrawings[p] = text
+                        end
+                        
+                        local txtObj = espDrawings[p]
+                        if onScreen and hum and hum.Health > 0 then
+                            local myHrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                            local dist = myHrp and math.floor((hrp.Position - myHrp.Position).Magnitude) or 0
+                            txtObj.Text = string.format("%s [%d m]", p.Name, dist)
+                            txtObj.Position = Vector2.new(vector.X, vector.Y - 25)
+                            txtObj.Visible = true
+                        else
+                            txtObj.Visible = false
+                        end
+                    elseif espDrawings[p] then
+                        espDrawings[p].Visible = false
+                    end
+                end
+            end)
+        end)
+    else
+        EspBtn.Text = "👁️ [OFF] ESP Player"
+        EspBtn.TextColor3 = Color3.fromRGB(255, 80, 80)
+        StatusLbl.Text = "Trạng thái: Đã tắt ESP."
+        if espConnection then espConnection:Disconnect() espConnection = nil end
+        for _, txt in pairs(espDrawings) do pcall(function() txt:Remove() end) end
+        espDrawings = {}
+    end
+end)
+
+-- Reset Character
+ResetCharBtn.MouseButton1Click:Connect(function()
+    pcall(function()
+        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
+            LocalPlayer.Character:FindFirstChildOfClass("Humanoid").Health = 0
+            StatusLbl.Text = "Trạng thái: Đã Reset nhân vật! 💀"
+        end
+    end)
+end)
+
+-- Tìm tên Player để bám
+TargetBox:GetPropertyChangedSignal("Text"):Connect(function()
+    pcall(function()
+        local textName = string.lower(TargetBox.Text)
+        if textName == "" then
+            AvatarImg.Image = "rbxassetid://0"
+            currentTargetPlayer = nil
+            return
+        end
+        local found = nil
+        for _, p in pairs(Players:GetPlayers()) do
+            if p ~= LocalPlayer and (string.find(string.lower(p.Name), textName) or string.find(string.lower(p.DisplayName), textName)) then
+                found = p
+                break
+            end
+        end
+        if found then
+            currentTargetPlayer = found
+            AvatarImg.Image = Players:GetUserThumbnailAsync(found.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size100x100)
+            StatusLbl.Text = "Đã chọn: " .. found.Name .. " ✅"
+        else
+            AvatarImg.Image = "rbxassetid://0"
+            currentTargetPlayer = nil
+        end
+    end)
+end)
+
+ResetPlayerTargetBtn.MouseButton1Click:Connect(function()
+    pcall(function()
+        TargetBox.Text = ""
+        AvatarImg.Image = "rbxassetid://0"
+        currentTargetPlayer = nil
+        if isTweenRunning then
+            isTweenRunning = false
+            TweenToggleBtn.Text = "🎯 [OFF] Tween Follow"
+            TweenToggleBtn.TextColor3 = Color3.fromRGB(255, 80, 80)
+            if tweenConnection then tweenConnection:Disconnect() tweenConnection = nil end
+        end
+        StatusLbl.Text = "Trạng thái: Đã xóa mục tiêu! 🔄"
+    end)
+end)
+
+-- Fly V3
+FlyBtn.MouseButton1Click:Connect(function()
+    isFlying = not isFlying
+    local char = LocalPlayer.Character
+    if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+    local hrp = char.HumanoidRootPart
+    
+    if isFlying then
+        FlyBtn.Text = "🕊️ [ON] Fly V3"
+        FlyBtn.TextColor3 = Color3.fromRGB(0, 255, 150)
+        StatusLbl.Text = "Trạng thái: Đang bay... 🕊️"
+        
+        bodyVelocity = Instance.new("BodyVelocity")
+        bodyVelocity.MaxForce = Vector3.new(1,1,1) * 1000000
+        bodyVelocity.Velocity = Vector3.new(0,0,0)
+        bodyVelocity.Parent = hrp
+        
+        bodyGyro = Instance.new("BodyGyro")
+        bodyGyro.MaxTorque = Vector3.new(1,1,1) * 1000000
+        bodyGyro.CFrame = hrp.CFrame
+        bodyGyro.Parent = hrp
+        
+        flyConnection = RunService.RenderStepped:Connect(function()
+            pcall(function()
+                local cam = workspace.CurrentCamera
+                local hum = char:FindFirstChildOfClass("Humanoid")
+                if hum and bodyVelocity and bodyGyro then
+                    bodyGyro.CFrame = cam.CFrame
+                    local md = hum.MoveDirection
+                    bodyVelocity.Velocity = (cam.CFrame.LookVector * md.Z * -flySpeed) + (cam.CFrame.RightVector * md.X * flySpeed)
+                end
+            end)
+        end)
+    else
+        FlyBtn.Text = "🕊️ [OFF] Fly V3"
+        FlyBtn.TextColor3 = Color3.fromRGB(255, 80, 80)
+        StatusLbl.Text = "Trạng thái: Tắt Fly."
+        if flyConnection then flyConnection:Disconnect() flyConnection = nil end
+        if bodyVelocity then bodyVelocity:Destroy() end
+        if bodyGyro then bodyGyro:Destroy() end
+    end
+end)
+
+-- Tween Follow
+TweenToggleBtn.MouseButton1Click:Connect(function()
+    if not currentTargetPlayer then
+        StatusLbl.Text = "Trạng thái: Chưa chọn Player! ⚠️"
+        StatusLbl.TextColor3 = Color3.fromRGB(255, 200, 0)
+        return
+    end
+    
+    isTweenRunning = not isTweenRunning
+    if isTweenRunning then
+        TweenToggleBtn.Text = "🎯 [ON] Tween Follow"
+        TweenToggleBtn.TextColor3 = Color3.fromRGB(0, 255, 150)
+        StatusLbl.Text = "Trạng thái: Đang bám theo " .. currentTargetPlayer.Name
+        
+        tweenConnection = RunService.RenderStepped:Connect(function()
+            pcall(function()
+                if isTweenRunning and currentTargetPlayer and currentTargetPlayer.Character and currentTargetPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                        local targetHrp = currentTargetPlayer.Character.HumanoidRootPart
+                        LocalPlayer.Character.HumanoidRootPart.CFrame = targetHrp.CFrame + Vector3.new(0, 3, 0)
+                    end
+                end
+            end)
+        end)
+    else
+        TweenToggleBtn.Text = "🎯 [OFF] Tween Follow"
+        TweenToggleBtn.TextColor3 = Color3.fromRGB(255, 80, 80)
+        StatusLbl.Text = "Trạng thái: Đã dừng Tween."
+        if tweenConnection then tweenConnection:Disconnect() tweenConnection = nil end
+    end
+end)
+
+print("2k13 Loaded Successfully!")
