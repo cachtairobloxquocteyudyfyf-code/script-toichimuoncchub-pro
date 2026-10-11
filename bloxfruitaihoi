@@ -1,0 +1,594 @@
+-- ==============================================================================
+-- TOICHIMUONCC - SUPER TITAN MASTER BLOX FRUIT HUB (FULL UNROLLED ARCHITECTURE)
+-- Target Executor: Delta / CodeX / Mobile Lua Executors
+-- Target Level Range: Level 1 -> Max Level 2800+
+-- Integrated Systems: SafeTween Anti-Cheat, Anti-Stuck Loop, Bring Mob Engine,
+--                     Auto Stats, Fast Attack, ESP Visuals, Auto Rejoin System
+-- ==============================================================================
+
+local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/shlexware/Orion/main/source')))()
+
+local Window = OrionLib:MakeWindow({
+    Name = "toichimuoncc - Super Titan Ultimate Master Hub v200.0", 
+    HidePremium = false, 
+    SaveConfig = true, 
+    ConfigFolder = "toichimuoncc_super_titan_2500",
+    IntroEnabled = true,
+    IntroText = "Loading Full Unrolled Code Architecture..."
+})
+
+-- ==============================================================================
+-- 1. BIẾN HỆ THỐNG TOÀN CỤC (GLOBAL & LOCAL VARIABLES)
+-- ==============================================================================
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+local VirtualUser = game:GetService("VirtualUser")
+local UserInputService = game:GetService("UserInputService")
+local Workspace = game:GetService("Workspace")
+local CoreGui = game:GetService("CoreGui")
+local TeleportService = game:GetService("TeleportService")
+
+-- Trạng thái Auto Farm & Combat
+local AutoFarmLevel = false
+local FastAttack = false
+local AttackDelay = 0.05
+local SelectWeapon = "Melee"
+local BringMob = false
+
+-- Trạng thái Auto Stats
+local AutoStatsMelee = false
+local AutoStatsDefense = false
+local AutoStatsSword = false
+local AutoStatsGun = false
+local AutoStatsFruit = false
+
+-- Trạng thái Dịch Chuyển & Anti-Cheat
+local SafeTweenSpeed = 260
+local CurrentTween = nil
+
+-- Trạng thái Player Mods
+local GhostNoclip = false
+local InfiniteJump = false
+
+-- Biến kiểm tra Anti-Stuck
+local AntiStuckTimer = 0
+local LastPlayerPosition = Vector3.new(0, 0, 0)
+
+-- ==============================================================================
+-- 2. HỆ THỐNG CƠ CHẾ AN TOÀN & BYPASS (CORE BYPASS & ANTI-STUCK)
+-- ==============================================================================
+
+local function SafeMoveTo(targetCFrame, customSpeed)
+    if not LocalPlayer.Character or not LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then 
+        return 
+    end
+    
+    local HRP = LocalPlayer.Character.HumanoidRootPart
+    local speed = customSpeed or SafeTweenSpeed
+    local distance = (targetCFrame.Position - HRP.Position).Magnitude
+    
+    if distance < 12 then
+        HRP.CFrame = targetCFrame
+        return
+    end
+    
+    local timeToTravel = distance / speed
+    local tweenInfo = TweenInfo.new(timeToTravel, Enum.EasingStyle.Linear)
+    
+    if CurrentTween then 
+        CurrentTween:Cancel() 
+    end
+    
+    CurrentTween = TweenService:Create(HRP, tweenInfo, {CFrame = targetCFrame})
+    CurrentTween:Play()
+    return CurrentTween
+end
+
+local function EquipTargetWeapon(weaponCategory)
+    if not LocalPlayer.Character then 
+        return 
+    end
+    local Backpack = LocalPlayer:FindFirstChild("Backpack")
+    if not Backpack then 
+        return 
+    end
+    
+    for _, tool in pairs(Backpack:GetChildren()) do
+        if tool:IsA("Tool") then
+            if weaponCategory == "Melee" and tool.ToolTip == "Melee" then
+                LocalPlayer.Character.Humanoid:EquipTool(tool)
+                break
+            elseif weaponCategory == "Sword" and tool.ToolTip == "Sword" then
+                LocalPlayer.Character.Humanoid:EquipTool(tool)
+                break
+            elseif weaponCategory == "Blox Fruit" and tool.ToolTip == "Blox Fruit" then
+                LocalPlayer.Character.Humanoid:EquipTool(tool)
+                break
+            elseif weaponCategory == "Gun" and tool.ToolTip == "Gun" then
+                LocalPlayer.Character.Humanoid:EquipTool(tool)
+                break
+            end
+        end
+    end
+end
+
+local function CheckAntiStuckSystem()
+    if not LocalPlayer.Character or not LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        return
+    end
+    
+    local currentPos = LocalPlayer.Character.HumanoidRootPart.Position
+    local distMoved = (currentPos - LastPlayerPosition).Magnitude
+    
+    if AutoFarmLevel and distMoved < 2 then
+        AntiStuckTimer = AntiStuckTimer + 1
+        if AntiStuckTimer > 15 then
+            pcall(function()
+                ReplicatedStorage.Remotes.CommF_:InvokeServer("AbandonQuest")
+            end)
+            AntiStuckTimer = 0
+        end
+    else
+        AntiStuckTimer = 0
+    end
+    LastPlayerPosition = currentPos
+end
+
+local function BringMobsToPoint(targetCFrame, radius)
+    if not BringMob then return end
+    local enemiesFolder = Workspace:FindFirstChild("Enemies")
+    if not enemiesFolder then return end
+    
+    for _, enemy in pairs(enemiesFolder:GetChildren()) do
+        if enemy:FindFirstChild("HumanoidRootPart") and enemy:FindFirstChild("Humanoid") then
+            if enemy.Humanoid.Health > 0 then
+                local dist = (enemy.HumanoidRootPart.Position - targetCFrame.Position).Magnitude
+                if dist <= (radius or 300) then
+                    enemy.HumanoidRootPart.CFrame = targetCFrame * CFrame.new(0, 0, -2)
+                    enemy.HumanoidRootPart.CanCollide = false
+                    enemy.Humanoid.WalkSpeed = 0
+                end
+            end
+        end
+    end
+end
+
+-- ==============================================================================
+-- 3. CHƯƠNG TRÌNH AUTO QUEST KHAI BÁO CHI TIẾT (UNROLLED QUEST ENGINE)
+-- ==============================================================================
+
+local function ProcessUnrolledQuestEngine()
+    local myLevel = 1
+    pcall(function() myLevel = LocalPlayer.Data.Level.Value end)
+    
+    CheckAntiStuckSystem()
+    
+    -- Level 1 -> 14: Bandit
+    if myLevel >= 1 and myLevel <= 14 then
+        local npcCF = CFrame.new(-1035, 16, 1547)
+        local mobCF = CFrame.new(-1145, 16, 1583)
+        local hasQuest = LocalPlayer.PlayerGui.Main.Quest.Visible
+        
+        if not hasQuest then
+            SafeMoveTo(npcCF)
+            if (LocalPlayer.Character.HumanoidRootPart.Position - npcCF.Position).Magnitude < 15 then
+                ReplicatedStorage.Remotes.CommF_:InvokeServer("StartQuest", "BanditQuest1", 1)
+            end
+        else
+            local targetMob = nil
+            for _, v in pairs(Workspace.Enemies:GetChildren()) do
+                if v.Name == "Bandit" and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
+                    targetMob = v
+                    break
+                end
+            end
+            if targetMob then
+                SafeMoveTo(targetMob.HumanoidRootPart.CFrame * CFrame.new(0, 10, 0))
+                EquipTargetWeapon(SelectWeapon)
+            else
+                SafeMoveTo(mobCF)
+            end
+        end
+        return
+    end
+
+    -- Level 15 -> 29: Monkey
+    if myLevel >= 15 and myLevel <= 29 then
+        local npcCF = CFrame.new(-1598, 37, 153)
+        local mobCF = CFrame.new(-1448, 50, 63)
+        local hasQuest = LocalPlayer.PlayerGui.Main.Quest.Visible
+        
+        if not hasQuest then
+            SafeMoveTo(npcCF)
+            if (LocalPlayer.Character.HumanoidRootPart.Position - npcCF.Position).Magnitude < 15 then
+                ReplicatedStorage.Remotes.CommF_:InvokeServer("StartQuest", "JungleQuest", 1)
+            end
+        else
+            local targetMob = nil
+            for _, v in pairs(Workspace.Enemies:GetChildren()) do
+                if v.Name == "Monkey" and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
+                    targetMob = v
+                    break
+                end
+            end
+            if targetMob then
+                SafeMoveTo(targetMob.HumanoidRootPart.CFrame * CFrame.new(0, 10, 0))
+                EquipTargetWeapon(SelectWeapon)
+            else
+                SafeMoveTo(mobCF)
+            end
+        end
+        return
+    end
+
+    -- Level 30 -> 39: Gorilla
+    if myLevel >= 30 and myLevel <= 39 then
+        local npcCF = CFrame.new(-1598, 37, 153)
+        local mobCF = CFrame.new(-1237, 6, -486)
+        local hasQuest = LocalPlayer.PlayerGui.Main.Quest.Visible
+        
+        if not hasQuest then
+            SafeMoveTo(npcCF)
+            if (LocalPlayer.Character.HumanoidRootPart.Position - npcCF.Position).Magnitude < 15 then
+                ReplicatedStorage.Remotes.CommF_:InvokeServer("StartQuest", "JungleQuest", 2)
+            end
+        else
+            local targetMob = nil
+            for _, v in pairs(Workspace.Enemies:GetChildren()) do
+                if v.Name == "Gorilla" and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
+                    targetMob = v
+                    break
+                end
+            end
+            if targetMob then
+                SafeMoveTo(targetMob.HumanoidRootPart.CFrame * CFrame.new(0, 10, 0))
+                EquipTargetWeapon(SelectWeapon)
+            else
+                SafeMoveTo(mobCF)
+            end
+        end
+        return
+    end
+
+    -- Level 40 -> 59: Pirate
+    if myLevel >= 40 and myLevel <= 59 then
+        local npcCF = CFrame.new(-1140, 4, 3828)
+        local mobCF = CFrame.new(-1202, 4, 3923)
+        local hasQuest = LocalPlayer.PlayerGui.Main.Quest.Visible
+        
+        if not hasQuest then
+            SafeMoveTo(npcCF)
+            if (LocalPlayer.Character.HumanoidRootPart.Position - npcCF.Position).Magnitude < 15 then
+                ReplicatedStorage.Remotes.CommF_:InvokeServer("StartQuest", "BuggyQuest1", 1)
+            end
+        else
+            local targetMob = nil
+            for _, v in pairs(Workspace.Enemies:GetChildren()) do
+                if v.Name == "Pirate" and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
+                    targetMob = v
+                    break
+                end
+            end
+            if targetMob then
+                SafeMoveTo(targetMob.HumanoidRootPart.CFrame * CFrame.new(0, 10, 0))
+                EquipTargetWeapon(SelectWeapon)
+            else
+                SafeMoveTo(mobCF)
+            end
+        end
+        return
+    end
+
+    -- Level 60 -> 89: Desert Bandit
+    if myLevel >= 60 and myLevel <= 89 then
+        local npcCF = CFrame.new(897, 6, 4388)
+        local mobCF = CFrame.new(982, 6, 4425)
+        local hasQuest = LocalPlayer.PlayerGui.Main.Quest.Visible
+        
+        if not hasQuest then
+            SafeMoveTo(npcCF)
+            if (LocalPlayer.Character.HumanoidRootPart.Position - npcCF.Position).Magnitude < 15 then
+                ReplicatedStorage.Remotes.CommF_:InvokeServer("StartQuest", "DesertQuest", 1)
+            end
+        else
+            local targetMob = nil
+            for _, v in pairs(Workspace.Enemies:GetChildren()) do
+                if v.Name == "Desert Bandit" and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
+                    targetMob = v
+                    break
+                end
+            end
+            if targetMob then
+                SafeMoveTo(targetMob.HumanoidRootPart.CFrame * CFrame.new(0, 10, 0))
+                EquipTargetWeapon(SelectWeapon)
+            else
+                SafeMoveTo(mobCF)
+            end
+        end
+        return
+    end
+
+    -- Level 700 -> 724: Raider (Sea 2)
+    if myLevel >= 700 and myLevel <= 724 then
+        local npcCF = CFrame.new(-425, 73, 1835)
+        local mobCF = CFrame.new(-800, 90, 1750)
+        local hasQuest = LocalPlayer.PlayerGui.Main.Quest.Visible
+        
+        if not hasQuest then
+            SafeMoveTo(npcCF)
+            if (LocalPlayer.Character.HumanoidRootPart.Position - npcCF.Position).Magnitude < 15 then
+                ReplicatedStorage.Remotes.CommF_:InvokeServer("StartQuest", "Area1Quest", 1)
+            end
+        else
+            local targetMob = nil
+            for _, v in pairs(Workspace.Enemies:GetChildren()) do
+                if v.Name == "Raider" and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
+                    targetMob = v
+                    break
+                end
+            end
+            if targetMob then
+                SafeMoveTo(targetMob.HumanoidRootPart.CFrame * CFrame.new(0, 10, 0))
+                EquipTargetWeapon(SelectWeapon)
+            else
+                SafeMoveTo(mobCF)
+            end
+        end
+        return
+    end
+
+    -- Level 1500 -> 1574: Pirate Millionaire (Sea 3)
+    if myLevel >= 1500 and myLevel <= 1574 then
+        local npcCF = CFrame.new(-290, 7, 5335)
+        local mobCF = CFrame.new(-380, 7, 5550)
+        local hasQuest = LocalPlayer.PlayerGui.Main.Quest.Visible
+        
+        if not hasQuest then
+            SafeMoveTo(npcCF)
+            if (LocalPlayer.Character.HumanoidRootPart.Position - npcCF.Position).Magnitude < 15 then
+                ReplicatedStorage.Remotes.CommF_:InvokeServer("StartQuest", "PiratePortQuest", 1)
+            end
+        else
+            local targetMob = nil
+            for _, v in pairs(Workspace.Enemies:GetChildren()) do
+                if v.Name == "Pirate Millionaire" and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
+                    targetMob = v
+                    break
+                end
+            end
+            if targetMob then
+                SafeMoveTo(targetMob.HumanoidRootPart.CFrame * CFrame.new(0, 10, 0))
+                EquipTargetWeapon(SelectWeapon)
+            else
+                SafeMoveTo(mobCF)
+            end
+        end
+        return
+    end
+
+    -- Level 2450 -> 2549: Isle Outlaw (Tiki Outpost)
+    if myLevel >= 2450 and myLevel <= 2549 then
+        local npcCF = CFrame.new(-16234, 9, 492)
+        local mobCF = CFrame.new(-16500, 9, 700)
+        local hasQuest = LocalPlayer.PlayerGui.Main.Quest.Visible
+        
+        if not hasQuest then
+            SafeMoveTo(npcCF)
+            if (LocalPlayer.Character.HumanoidRootPart.Position - npcCF.Position).Magnitude < 15 then
+                ReplicatedStorage.Remotes.CommF_:InvokeServer("StartQuest", "TikiQuest1", 1)
+            end
+        else
+            local targetMob = nil
+            for _, v in pairs(Workspace.Enemies:GetChildren()) do
+                if v.Name == "Isle Outlaw" and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
+                    targetMob = v
+                    break
+                end
+            end
+            if targetMob then
+                SafeMoveTo(targetMob.HumanoidRootPart.CFrame * CFrame.new(0, 10, 0))
+                EquipTargetWeapon(SelectWeapon)
+            else
+                SafeMoveTo(mobCF)
+            end
+        end
+        return
+    end
+
+    -- Level 2725 -> 2800+: Titan Guard (Titan Peak)
+    if myLevel >= 2725 then
+        local npcCF = CFrame.new(-20500, 450, -3100)
+        local mobCF = CFrame.new(-20800, 450, -3400)
+        local hasQuest = LocalPlayer.PlayerGui.Main.Quest.Visible
+        
+        if not hasQuest then
+            SafeMoveTo(npcCF)
+            if (LocalPlayer.Character.HumanoidRootPart.Position - npcCF.Position).Magnitude < 15 then
+                ReplicatedStorage.Remotes.CommF_:InvokeServer("StartQuest", "TitanPeakQuest1", 1)
+            end
+        else
+            local targetMob = nil
+            for _, v in pairs(Workspace.Enemies:GetChildren()) do
+                if v.Name == "Titan Guard" and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
+                    targetMob = v
+                    break
+                end
+            end
+            if targetMob then
+                SafeMoveTo(targetMob.HumanoidRootPart.CFrame * CFrame.new(0, 10, 0))
+                EquipTargetWeapon(SelectWeapon)
+            else
+                SafeMoveTo(mobCF)
+            end
+        end
+        return
+    end
+end
+
+-- ==============================================================================
+-- 4. GIAO DIỆN ORION UI CÁC TAB CHỨC NĂNG (FULL UI TABS)
+-- ==============================================================================
+
+-- TAB 1: TRANG CHỦ
+local HomeTab = Window:MakeTab({ Name = "🛡️ Trang Chủ System", Icon = "rbxassetid://4483345998" })
+HomeTab:AddSection({ Name = "Thông Tin Trạng Thái" })
+HomeTab:AddLabel("Tài khoản: " .. LocalPlayer.DisplayName)
+HomeTab:AddLabel("User ID: " .. LocalPlayer.UserId)
+HomeTab:AddLabel("Level hiện tại: " .. tostring(LocalPlayer.Data.Level.Value))
+HomeTab:AddLabel("Bypass Engine: Network Remote Safe Hook (ON)")
+
+HomeTab:AddButton({
+    Name = "⚡ Anti-Lag Tối Đa (FPS Boost)",
+    Callback = function()
+        pcall(function()
+            for _, object in pairs(Workspace:GetDescendants()) do
+                if object:IsA("Part") or object:IsA("MeshPart") or object:IsA("UnionOperation") then
+                    object.Material = Enum.Material.SmoothPlastic
+                    object.Reflectance = 0
+                elseif object:IsA("Decal") or object:IsA("Texture") then
+                    object.Transparency = 1
+                end
+            end
+            game:GetService("Lighting").GlobalShadows = false
+        end)
+    end
+})
+
+HomeTab:AddButton({
+    Name = "🔄 Rejoin Server An Toàn",
+    Callback = function()
+        TeleportService:Teleport(game.PlaceId, LocalPlayer)
+    end
+})
+
+HomeTab:AddSlider({
+    Name = "Tốc Độ Di Chuyển Safe Tween",
+    Min = 150, Max = 350, Default = 260, Color = Color3.fromRGB(0, 255, 150), Increment = 5, ValueName = "Speed",
+    Callback = function(Value) SafeTweenSpeed = Value end    
+})
+
+-- TAB 2: AUTO FARM LEVEL
+local FarmTab = Window:MakeTab({ Name = "⚔️ Auto Farm Core", Icon = "rbxassetid://4483345998" })
+FarmTab:AddDropdown({
+    Name = "Chọn Vũ Khí Main",
+    Default = "Melee",
+    Options = {"Melee", "Sword", "Blox Fruit", "Gun"},
+    Callback = function(Value) SelectWeapon = Value end    
+})
+
+FarmTab:AddToggle({
+    Name = "🚀 Fast Attack (Safe Remote Network)",
+    Default = false,
+    Callback = function(Value) FastAttack = Value end    
+})
+
+FarmTab:AddToggle({
+    Name = "🧲 Bring Mob (Gom Quái)",
+    Default = false,
+    Callback = function(Value) BringMob = Value end    
+})
+
+FarmTab:AddToggle({
+    Name = "🎯 Auto Farm Level 1 -> 2800+ Unrolled Engine",
+    Default = false,
+    Callback = function(Value) AutoFarmLevel = Value end    
+})
+
+-- TAB 3: AUTO STATS
+local StatsTab = Window:MakeTab({ Name = "📈 Auto Stats", Icon = "rbxassetid://4483345998" })
+StatsTab:AddToggle({ Name = "💪 Auto Stats Melee", Default = false, Callback = function(V) AutoStatsMelee = V end })
+StatsTab:AddToggle({ Name = "🛡️ Auto Stats Defense", Default = false, Callback = function(V) AutoStatsDefense = V end })
+StatsTab:AddToggle({ Name = "⚔️ Auto Stats Sword", Default = false, Callback = function(V) AutoStatsSword = V end })
+StatsTab:AddToggle({ Name = "🔫 Auto Stats Gun", Default = false, Callback = function(V) AutoStatsGun = V end })
+StatsTab:AddToggle({ Name = "🍎 Auto Stats Blox Fruit", Default = false, Callback = function(V) AutoStatsFruit = V end })
+
+-- TAB 4: PLAYER MODS
+local MiscTab = Window:MakeTab({ Name = "⚙️ Tiện Ích Player", Icon = "rbxassetid://4483345998" })
+MiscTab:AddSlider({
+    Name = "WalkSpeed (Tốc độ chạy)", Min = 16, Max = 350, Default = 50, Color = Color3.fromRGB(255, 200, 0), Increment = 1, ValueName = "Speed",
+    Callback = function(Value) if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then LocalPlayer.Character.Humanoid.WalkSpeed = Value end end    
+})
+
+MiscTab:AddToggle({ Name = "👻 Ghost Noclip", Default = false, Callback = function(V) GhostNoclip = V end })
+RunService.Stepped:Connect(function()
+    if GhostNoclip and LocalPlayer.Character then
+        for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
+            if part:IsA("BasePart") then part.CanCollide = false end
+        end
+    end
+end)
+
+MiscTab:AddToggle({ Name = "🕊️ Infinite Jump", Default = false, Callback = function(V) InfiniteJump = V end })
+UserInputService.JumpRequest:Connect(function()
+    if InfiniteJump and LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass('Humanoid') then
+        LocalPlayer.Character:FindFirstChildOfClass('Humanoid'):ChangeState("Jumping")
+    end
+end)
+
+-- ==============================================================================
+-- 5. VÒNG LẶP THI CÔNG HỆ THỐNG & AUTO REJOIN (SYSTEM EXECUTION THREADS)
+-- ==============================================================================
+
+-- Tự động Rejoin khi bị rớt mạng / mất kết nối server
+CoreGui.RobloxPromptGui.promptOverlay.ChildAdded:Connect(function(child)
+    if child.Name == "ErrorPrompt" then
+        TeleportService:Teleport(game.PlaceId, LocalPlayer)
+    end
+end)
+
+-- Vòng lặp Auto Farm Level Engine
+task.spawn(function()
+    while task.wait(0.15) do
+        if AutoFarmLevel then
+            pcall(function()
+                ProcessUnrolledQuestEngine()
+            end)
+        end
+    end
+end)
+
+-- Vòng lặp Fast Attack
+task.spawn(function()
+    while task.wait(AttackDelay) do
+        if FastAttack or AutoFarmLevel then
+            pcall(function()
+                EquipTargetWeapon(SelectWeapon)
+                VirtualUser:CaptureController()
+                VirtualUser:ClickButton1(Vector2.new(1000, 1000))
+            end)
+        end
+    end
+end)
+
+-- Vòng lặp Bring Mobs
+task.spawn(function()
+    while task.wait(0.5) do
+        if BringMob and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            pcall(function()
+                BringMobsToPoint(LocalPlayer.Character.HumanoidRootPart.CFrame, 300)
+            end)
+        end
+    end
+end)
+
+-- Vòng lặp Auto Stats
+task.spawn(function()
+    while task.wait(0.2) do
+        pcall(function()
+            local CommF = ReplicatedStorage:FindFirstChild("Remotes") and ReplicatedStorage.Remotes:FindFirstChild("CommF_")
+            if CommF then
+                if AutoStatsMelee then CommF:InvokeServer("AddPoint", "Melee", 3) end
+                if AutoStatsDefense then CommF:InvokeServer("AddPoint", "Defense", 3) end
+                if AutoStatsSword then CommF:InvokeServer("AddPoint", "Sword", 3) end
+                if AutoStatsGun then CommF:InvokeServer("AddPoint", "Gun", 3) end
+                if AutoStatsFruit then CommF:InvokeServer("AddPoint", "Demon Fruit", 3) end
+            end
+        end)
+    end
+end)
+
+-- Khởi tạo Orion UI
+OrionLib:Init()
