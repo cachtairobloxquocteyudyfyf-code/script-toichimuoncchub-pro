@@ -1,0 +1,422 @@
+-- ==============================================================================
+-- TOICHIMUONCC - SEA 1 COMPLETE MOB SPAWN LOCATIONS & UNROLLED ENGINE
+-- Target Executor: Delta / CodeX Mobile
+-- Target Zone: Sea 1 All Mobs & All Islands
+-- ==============================================================================
+
+local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/shlexware/Orion/main/source')))()
+
+local Window = OrionLib:MakeWindow({
+    Name = "toichimuoncc - Sea 1 Full Spawn Hub", 
+    HidePremium = false, 
+    SaveConfig = true, 
+    ConfigFolder = "ToichimuonccSea1Spawns",
+    IntroEnabled = true,
+    IntroText = "Loading All Mob Spawn Coordinates..."
+})
+
+-- ==============================================================================
+-- 1. BIẾN HỆ THỐNG TOÀN CỤC
+-- ==============================================================================
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
+local VirtualUser = game:GetService("VirtualUser")
+local Workspace = game:GetService("Workspace")
+
+local AutoFarmLevel = false
+local FastAttackAura = false
+local BringSmartMob = false
+local SelectWeapon = "Melee"
+local TweenSpeed = 280
+local CurrentTween = nil
+
+local NameQuest = ""
+local QuestLv = 1
+local NameMon = ""
+local CFrameQ = CFrame.new(0,0,0)
+local CFrameMon = CFrame.new(0,0,0)
+local CurrentMobSpawns = {}
+
+-- ==============================================================================
+-- 2. DỮ LIỆU TỌA ĐỘ HỒI SINH (SPAWN LOCATIONS) CHI TIẾT TẤT CẢ QUÁI SEA 1
+-- ==============================================================================
+local MobSpawnData = {
+    ["Bandit"] = {
+        CFrame.new(-1145, 16, 1583), CFrame.new(-1120, 16, 1550), 
+        CFrame.new(-1170, 16, 1610), CFrame.new(-1100, 16, 1600),
+        CFrame.new(-1130, 16, 1630)
+    },
+    ["Monkey"] = {
+        CFrame.new(-1448, 50, 63), CFrame.new(-1490, 50, 40),
+        CFrame.new(-1420, 50, 80), CFrame.new(-1460, 50, 100)
+    },
+    ["Gorilla"] = {
+        CFrame.new(-1237, 6, -486), CFrame.new(-1210, 6, -450),
+        CFrame.new(-1260, 6, -510)
+    },
+    ["Pirate"] = {
+        CFrame.new(-1202, 4, 3923), CFrame.new(-1180, 4, 3950),
+        CFrame.new(-1230, 4, 3900), CFrame.new(-1210, 4, 3870),
+        CFrame.new(-1170, 4, 3910)
+    },
+    ["Brute"] = {
+        CFrame.new(-1387, 24, 4100), CFrame.new(-1350, 24, 4130),
+        CFrame.new(-1410, 24, 4070), CFrame.new(-1370, 24, 4050)
+    },
+    ["Desert Bandit"] = {
+        CFrame.new(982, 16, 4425), CFrame.new(950, 16, 4450),
+        CFrame.new(1010, 16, 4400), CFrame.new(970, 16, 4380),
+        CFrame.new(1000, 16, 4460)
+    },
+    ["Desert Officer"] = {
+        CFrame.new(1547, 14, 4381), CFrame.new(1520, 14, 4410),
+        CFrame.new(1570, 14, 4350), CFrame.new(1550, 14, 4430)
+    },
+    ["Snow Bandit"] = {
+        CFrame.new(1356, 105, -1328), CFrame.new(1380, 105, -1300),
+        CFrame.new(1330, 105, -1350), CFrame.new(1370, 105, -1360),
+        CFrame.new(1320, 105, -1310)
+    },
+    ["Snowman"] = {
+        CFrame.new(1218, 138, -1488), CFrame.new(1250, 138, -1460),
+        CFrame.new(1190, 138, -1510), CFrame.new(1230, 138, -1520),
+        CFrame.new(1200, 138, -1450)
+    },
+    ["Chief Petty Officer"] = {
+        CFrame.new(-4931, 65, 4121), CFrame.new(-4960, 65, 4100),
+        CFrame.new(-4900, 65, 4150), CFrame.new(-4940, 65, 4170),
+        CFrame.new(-4910, 65, 4080), CFrame.new(-4970, 65, 4130)
+    },
+    ["Sky Bandit"] = {
+        CFrame.new(-4955, 365, -2908), CFrame.new(-4930, 365, -2930),
+        CFrame.new(-4980, 365, -2880), CFrame.new(-4920, 365, -2870),
+        CFrame.new(-4970, 365, -2940)
+    },
+    ["Dark Master"] = {
+        CFrame.new(-5148, 439, -2332), CFrame.new(-5120, 439, -2360),
+        CFrame.new(-5170, 439, -2310), CFrame.new(-5130, 439, -2300),
+        CFrame.new(-5160, 439, -2370), CFrame.new(-5110, 439, -2330)
+    },
+    ["Prisoner"] = {
+        CFrame.new(4937, 0, 649), CFrame.new(4960, 0, 620),
+        CFrame.new(4910, 0, 670), CFrame.new(4980, 0, 660),
+        CFrame.new(4920, 0, 610), CFrame.new(4950, 0, 690)
+    },
+    ["Dangerous Prisoner"] = {
+        CFrame.new(5544, 0, 700), CFrame.new(5570, 0, 680),
+        CFrame.new(5520, 0, 730), CFrame.new(5590, 0, 710),
+        CFrame.new(5510, 0, 670), CFrame.new(5560, 0, 740),
+        CFrame.new(5530, 0, 660)
+    },
+    ["Toga Warrior"] = {
+        CFrame.new(-1872, 49, -2913), CFrame.new(-1840, 49, -2940),
+        CFrame.new(-1900, 49, -2880), CFrame.new(-1850, 49, -2870),
+        CFrame.new(-1890, 49, -2950), CFrame.new(-1820, 49, -2900),
+        CFrame.new(-1910, 49, -2920)
+    },
+    ["Gladiator"] = {
+        CFrame.new(-1521, 81, -3066), CFrame.new(-1490, 81, -3090),
+        CFrame.new(-1550, 81, -3030), CFrame.new(-1500, 81, -3020),
+        CFrame.new(-1540, 81, -3100), CFrame.new(-1480, 81, -3050),
+        CFrame.new(-1560, 81, -3070)
+    },
+    ["Military Soldier"] = {
+        CFrame.new(5369, 61, 8556), CFrame.new(5340, 61, 8580),
+        CFrame.new(5390, 61, 8520), CFrame.new(5330, 61, 8510),
+        CFrame.new(5380, 61, 8590), CFrame.new(5410, 61, 8540),
+        CFrame.new(5350, 61, 8610)
+    },
+    ["Military Spy"] = {
+        CFrame.new(-5787, 75, 8651), CFrame.new(-5750, 75, 8680),
+        CFrame.new(-5810, 75, 8620), CFrame.new(-5760, 75, 8600),
+        CFrame.new(-5800, 75, 8690), CFrame.new(-5740, 75, 8640),
+        CFrame.new(-5820, 75, 8660)
+    },
+    ["Fishman Warrior"] = {
+        CFrame.new(60844, 98, 1298), CFrame.new(60810, 98, 1320),
+        CFrame.new(60870, 98, 1270), CFrame.new(60800, 98, 1260),
+        CFrame.new(60880, 98, 1330), CFrame.new(60830, 98, 1350),
+        CFrame.new(60850, 98, 1240), CFrame.new(60790, 98, 1290)
+    },
+    ["Fishman Commando"] = {
+        CFrame.new(61738, 64, 1433), CFrame.new(61700, 64, 1460),
+        CFrame.new(61760, 64, 1400), CFrame.new(61690, 64, 1390),
+        CFrame.new(61770, 64, 1470), CFrame.new(61720, 64, 1490),
+        CFrame.new(61750, 64, 1370), CFrame.new(61680, 64, 1430)
+    },
+    ["God's Guard"] = {
+        CFrame.new(-4628, 866, -1931), CFrame.new(-4600, 866, -1960),
+        CFrame.new(-4650, 866, -1900), CFrame.new(-4590, 866, -1890),
+        CFrame.new(-4660, 866, -1970), CFrame.new(-4580, 866, -1930),
+        CFrame.new(-4640, 866, -1980)
+    },
+    ["Shanda"] = {
+        CFrame.new(-7685, 5601, -441), CFrame.new(-7650, 5601, -470),
+        CFrame.new(-7710, 5601, -410), CFrame.new(-7640, 5601, -400),
+        CFrame.new(-7720, 5601, -480), CFrame.new(-7630, 5601, -440),
+        CFrame.new(-7700, 5601, -490)
+    },
+    ["Royal Squad"] = {
+        CFrame.new(-7654, 5637, -1407), CFrame.new(-7620, 5637, -1430),
+        CFrame.new(-7680, 5637, -1380), CFrame.new(-7610, 5637, -1370),
+        CFrame.new(-7690, 5637, -1440), CFrame.new(-7600, 5637, -1400),
+        CFrame.new(-7670, 5637, -1460), CFrame.new(-7630, 5637, -1350)
+    },
+    ["Royal Soldier"] = {
+        CFrame.new(-7760, 5679, -1884), CFrame.new(-7730, 5679, -1910),
+        CFrame.new(-7790, 5679, -1850), CFrame.new(-7720, 5679, -1840),
+        CFrame.new(-7800, 5679, -1920), CFrame.new(-7710, 5679, -1880),
+        CFrame.new(-7780, 5679, -1930), CFrame.new(-7740, 5679, -1820)
+    },
+    ["Galley Pirate"] = {
+        CFrame.new(5557, 152, 3998), CFrame.new(5520, 152, 4020),
+        CFrame.new(5580, 152, 3970), CFrame.new(5510, 152, 3960),
+        CFrame.new(5590, 152, 4030), CFrame.new(5500, 152, 3990),
+        CFrame.new(5570, 152, 4050), CFrame.new(5530, 152, 3940)
+    },
+    ["Galley Captain"] = {
+        CFrame.new(5677, 92, 4966), CFrame.new(5640, 92, 4990),
+        CFrame.new(5700, 92, 4930), CFrame.new(5630, 92, 4920),
+        CFrame.new(5710, 92, 5000), CFrame.new(5620, 92, 4960),
+        CFrame.new(5690, 92, 5020), CFrame.new(5650, 92, 4900),
+        CFrame.new(5680, 92, 4950)
+    }
+}
+
+-- ==============================================================================
+-- 3. HỆ THỐNG DI CHUYỂN AN TOÀN
+-- ==============================================================================
+local function SafeMoveTo(targetCFrame)
+    if not LocalPlayer.Character or not LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then return end
+    local HRP = LocalPlayer.Character.HumanoidRootPart
+    local dist = (targetCFrame.Position - HRP.Position).Magnitude
+    
+    if dist < 12 then
+        HRP.CFrame = targetCFrame
+        return
+    end
+    
+    local time = dist / TweenSpeed
+    if CurrentTween then CurrentTween:Cancel() end
+    CurrentTween = TweenService:Create(HRP, TweenInfo.new(time, Enum.EasingStyle.Linear), {CFrame = targetCFrame})
+    CurrentTween:Play()
+end
+
+local function EquipWeapon(weaponType)
+    if not LocalPlayer.Character then return end
+    local backpack = LocalPlayer:FindFirstChild("Backpack")
+    if not backpack then return end
+    
+    for _, tool in pairs(backpack:GetChildren()) do
+        if tool:IsA("Tool") and tool.ToolTip == weaponType then
+            LocalPlayer.Character.Humanoid:EquipTool(tool)
+            break
+        end
+    end
+end
+
+-- ==============================================================================
+-- 4. CẬP NHẬT DỮ LIỆU NHIỆM VỤ THEO LEVEL
+-- ==============================================================================
+local function UpdateQuestData()
+    local myLevel = 1
+    pcall(function() myLevel = LocalPlayer.Data.Level.Value end)
+
+    if myLevel >= 1 and myLevel <= 14 then
+        NameQuest = "BanditQuest1"; QuestLv = 1; NameMon = "Bandit"
+        CFrameQ = CFrame.new(-1035, 16, 1547); CFrameMon = CFrame.new(-1145, 16, 1583)
+    elseif myLevel >= 15 and myLevel <= 29 then
+        NameQuest = "JungleQuest"; QuestLv = 1; NameMon = "Monkey"
+        CFrameQ = CFrame.new(-1598, 37, 153); CFrameMon = CFrame.new(-1448, 50, 63)
+    elseif myLevel >= 30 and myLevel <= 39 then
+        NameQuest = "JungleQuest"; QuestLv = 2; NameMon = "Gorilla"
+        CFrameQ = CFrame.new(-1598, 37, 153); CFrameMon = CFrame.new(-1237, 6, -486)
+    elseif myLevel >= 40 and myLevel <= 59 then
+        NameQuest = "BuggyQuest1"; QuestLv = 1; NameMon = "Pirate"
+        CFrameQ = CFrame.new(-1140, 4, 3828); CFrameMon = CFrame.new(-1202, 4, 3923)
+    elseif myLevel >= 60 and myLevel <= 74 then
+        NameQuest = "BuggyQuest1"; QuestLv = 2; NameMon = "Brute"
+        CFrameQ = CFrame.new(-1140, 4, 3828); CFrameMon = CFrame.new(-1387, 24, 4100)
+    elseif myLevel >= 75 and myLevel <= 89 then
+        NameQuest = "DesertQuest"; QuestLv = 1; NameMon = "Desert Bandit"
+        CFrameQ = CFrame.new(897, 6, 4388); CFrameMon = CFrame.new(982, 16, 4425)
+    elseif myLevel >= 90 and myLevel <= 99 then
+        NameQuest = "DesertQuest"; QuestLv = 2; NameMon = "Desert Officer"
+        CFrameQ = CFrame.new(897, 6, 4388); CFrameMon = CFrame.new(1547, 14, 4381)
+    elseif myLevel >= 100 and myLevel <= 119 then
+        NameQuest = "SnowQuest"; QuestLv = 1; NameMon = "Snow Bandit"
+        CFrameQ = CFrame.new(1386, 87, -1298); CFrameMon = CFrame.new(1356, 105, -1328)
+    elseif myLevel >= 120 and myLevel <= 149 then
+        NameQuest = "SnowQuest"; QuestLv = 2; NameMon = "Snowman"
+        CFrameQ = CFrame.new(1386, 87, -1298); CFrameMon = CFrame.new(1218, 138, -1488)
+    elseif myLevel >= 150 and myLevel <= 174 then
+        NameQuest = "MarineQuest2"; QuestLv = 1; NameMon = "Chief Petty Officer"
+        CFrameQ = CFrame.new(-5035, 28, 4324); CFrameMon = CFrame.new(-4931, 65, 4121)
+    elseif myLevel >= 175 and myLevel <= 189 then
+        NameQuest = "SkyQuest"; QuestLv = 1; NameMon = "Sky Bandit"
+        CFrameQ = CFrame.new(-4842, 717, -2623); CFrameMon = CFrame.new(-4955, 365, -2908)
+    elseif myLevel >= 190 and myLevel <= 209 then
+        NameQuest = "SkyQuest"; QuestLv = 2; NameMon = "Dark Master"
+        CFrameQ = CFrame.new(-4842, 717, -2623); CFrameMon = CFrame.new(-5148, 439, -2332)
+    elseif myLevel >= 210 and myLevel <= 249 then
+        NameQuest = "PrisonerQuest"; QuestLv = 1; NameMon = "Prisoner"
+        CFrameQ = CFrame.new(5310, 0, 474); CFrameMon = CFrame.new(4937, 0, 649)
+    elseif myLevel >= 250 and myLevel <= 274 then
+        NameQuest = "PrisonerQuest"; QuestLv = 2; NameMon = "Dangerous Prisoner"
+        CFrameQ = CFrame.new(5310, 0, 474); CFrameMon = CFrame.new(5544, 0, 700)
+    elseif myLevel >= 275 and myLevel <= 299 then
+        NameQuest = "ColosseumQuest"; QuestLv = 1; NameMon = "Toga Warrior"
+        CFrameQ = CFrame.new(-1577, 7, -2984); CFrameMon = CFrame.new(-1872, 49, -2913)
+    elseif myLevel >= 300 and myLevel <= 324 then
+        NameQuest = "ColosseumQuest"; QuestLv = 2; NameMon = "Gladiator"
+        CFrameQ = CFrame.new(-1577, 7, -2984); CFrameMon = CFrame.new(-1521, 81, -3066)
+    elseif myLevel >= 325 and myLevel <= 374 then
+        NameQuest = "MagmaQuest"; QuestLv = 1; NameMon = "Military Soldier"
+        CFrameQ = CFrame.new(5316, 12, 8517); CFrameMon = CFrame.new(5369, 61, 8556)
+    elseif myLevel >= 375 and myLevel <= 399 then
+        NameQuest = "MagmaQuest"; QuestLv = 2; NameMon = "Military Spy"
+        CFrameQ = CFrame.new(5316, 12, 8517); CFrameMon = CFrame.new(-5787, 75, 8651)
+    elseif myLevel >= 400 and myLevel <= 449 then
+        NameQuest = "FishmanQuest"; QuestLv = 1; NameMon = "Fishman Warrior"
+        CFrameQ = CFrame.new(61122, 18, 1569); CFrameMon = CFrame.new(60844, 98, 1298)
+    elseif myLevel >= 450 and myLevel <= 474 then
+        NameQuest = "FishmanQuest"; QuestLv = 2; NameMon = "Fishman Commando"
+        CFrameQ = CFrame.new(61122, 18, 1569); CFrameMon = CFrame.new(61738, 64, 1433)
+    elseif myLevel >= 475 and myLevel <= 524 then
+        NameQuest = "SkyExp1Quest"; QuestLv = 1; NameMon = "God's Guard"
+        CFrameQ = CFrame.new(-4721, 845, -1953); CFrameMon = CFrame.new(-4628, 866, -1931)
+    elseif myLevel >= 525 and myLevel <= 549 then
+        NameQuest = "SkyExp1Quest"; QuestLv = 2; NameMon = "Shanda"
+        CFrameQ = CFrame.new(-4721, 845, -1953); CFrameMon = CFrame.new(-7685, 5601, -441)
+    elseif myLevel >= 550 and myLevel <= 574 then
+        NameQuest = "SkyExp2Quest"; QuestLv = 1; NameMon = "Royal Squad"
+        CFrameQ = CFrame.new(-7903, 5635, -1410); CFrameMon = CFrame.new(-7654, 5637, -1407)
+    elseif myLevel >= 575 and myLevel <= 624 then
+        NameQuest = "SkyExp2Quest"; QuestLv = 2; NameMon = "Royal Soldier"
+        CFrameQ = CFrame.new(-7903, 5635, -1410); CFrameMon = CFrame.new(-7760, 5679, -1884)
+    elseif myLevel >= 625 and myLevel <= 649 then
+        NameQuest = "FountainQuest"; QuestLv = 1; NameMon = "Galley Pirate"
+        CFrameQ = CFrame.new(5258, 38, 4050); CFrameMon = CFrame.new(5557, 152, 3998)
+    elseif myLevel >= 650 then
+        NameQuest = "FountainQuest"; QuestLv = 2; NameMon = "Galley Captain"
+        CFrameQ = CFrame.new(5258, 38, 4050); CFrameMon = CFrame.new(5677, 92, 4966)
+    end
+    
+    CurrentMobSpawns = MobSpawnData[NameMon] or {CFrameMon}
+end
+
+-- ==============================================================================
+-- 5. GIAO DIỆN UI
+-- ==============================================================================
+local HomeTab = Window:MakeTab({ Name = "🏠 Trang Chủ", Icon = "rbxassetid://4483345998" })
+HomeTab:AddLabel("Tài khoản: " .. LocalPlayer.DisplayName)
+HomeTab:AddLabel("Khu vực: Sea 1 (Full All Mob Spawns)")
+
+local FarmTab = Window:MakeTab({ Name = "⚔️ Auto Farm Sea 1", Icon = "rbxassetid://4483345998" })
+
+FarmTab:AddDropdown({
+    Name = "Chọn Vũ Khí Đánh",
+    Default = "Melee",
+    Options = {"Melee", "Sword", "Blox Fruit", "Gun"},
+    Callback = function(Value) SelectWeapon = Value end
+})
+
+FarmTab:AddToggle({
+    Name = "🚀 Fast Attack Aura (Đánh Nhanh)",
+    Default = false,
+    Callback = function(Value) FastAttackAura = Value end
+})
+
+FarmTab:AddToggle({
+    Name = "🧲 Bring Mob Smart (Gom 2 Con Đánh Xong Lấy Tiếp)",
+    Default = false,
+    Callback = function(Value) BringSmartMob = Value end
+})
+
+FarmTab:AddToggle({
+    Name = "🎯 Auto Farm Level (Tự Bay Trên Đầu Quái)",
+    Default = false,
+    Callback = function(Value) AutoFarmLevel = Value end
+})
+
+-- ==============================================================================
+-- 6. VÒNG LẶP HỆ THỐNG
+-- ==============================================================================
+
+-- Auto Quest & Farm Trên Đầu Quái
+task.spawn(function()
+    while task.wait(0.12) do
+        if AutoFarmLevel then
+            pcall(function()
+                UpdateQuestData()
+                local hasQuest = false
+                pcall(function() hasQuest = LocalPlayer.PlayerGui.Main.Quest.Visible end)
+                
+                if not hasQuest then
+                    SafeMoveTo(CFrameQ)
+                    if (LocalPlayer.Character.HumanoidRootPart.Position - CFrameQ.Position).Magnitude < 15 then
+                        ReplicatedStorage.Remotes.CommF_:InvokeServer("StartQuest", NameQuest, QuestLv)
+                    end
+                else
+                    local targetMob = nil
+                    for _, v in pairs(Workspace.Enemies:GetChildren()) do
+                        if v.Name == NameMon and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
+                            targetMob = v
+                            break
+                        end
+                    end
+                    
+                    if targetMob and targetMob:FindFirstChild("HumanoidRootPart") then
+                        SafeMoveTo(targetMob.HumanoidRootPart.CFrame * CFrame.new(0, 11, 0) * CFrame.Angles(math.rad(-90), 0, 0))
+                        EquipWeapon(SelectWeapon)
+                    else
+                        -- Nếu chưa xuất hiện quái, bay tới điểm spawn đầu tiên trong bảng
+                        SafeMoveTo(CurrentMobSpawns[1] * CFrame.new(0, 15, 0))
+                    end
+                end
+            end)
+        end
+    end
+end)
+
+-- Bring Quái Thông Minh Tới Tọa Độ
+task.spawn(function()
+    while task.wait(0.35) do
+        if (BringSmartMob or AutoFarmLevel) and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            pcall(function()
+                local hrp = LocalPlayer.Character.HumanoidRootPart
+                local mobCount = 0
+                
+                for _, enemy in pairs(Workspace.Enemies:GetChildren()) do
+                    if enemy.Name == NameMon and enemy:FindFirstChild("HumanoidRootPart") and enemy:FindFirstChild("Humanoid") and enemy.Humanoid.Health > 0 then
+                        if (enemy.HumanoidRootPart.Position - hrp.Position).Magnitude <= 350 then
+                            if mobCount < 2 then
+                                enemy.HumanoidRootPart.CFrame = hrp.CFrame * CFrame.new(0, -8, 0)
+                                enemy.HumanoidRootPart.CanCollide = false
+                                enemy.Humanoid.WalkSpeed = 0
+                                mobCount = mobCount + 1
+                            end
+                        end
+                    end
+                end
+            end)
+        end
+    end
+end)
+
+-- Fast Attack Aura
+task.spawn(function()
+    while task.wait(0.04) do
+        if FastAttackAura or AutoFarmLevel then
+            pcall(function()
+                EquipWeapon(SelectWeapon)
+                VirtualUser:CaptureController()
+                VirtualUser:ClickButton1(Vector2.new(1000, 1000))
+            end)
+        end
+    end
+end)
+
+OrionLib:Init()
