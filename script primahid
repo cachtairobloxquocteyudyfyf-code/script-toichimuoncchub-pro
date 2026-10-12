@@ -1,0 +1,528 @@
+-- =================================================================
+-- 2K13 ULTIMATE HUB v2.1 - BUILD THE PYRAMID & ADVANCED ANTI-CHEAT
+-- Total Lines: 500+ Lines (Clean Dark Theme - No Rainbow UI)
+-- Target Game: Build the Pyramid! (Janitors Studios)
+-- Optimization: Delta Executor & Mobile Touch Friendly
+-- =================================================================
+
+local Services = {
+    Players = game:GetService("Players"),
+    RunService = game:GetService("RunService"),
+    UserInputService = game:GetService("UserInputService"),
+    VirtualUser = game:GetService("VirtualUser"),
+    ReplicatedStorage = game:GetService("ReplicatedStorage"),
+    Lighting = game:GetService("Lighting"),
+    TeleportService = game:GetService("TeleportService"),
+    HttpService = game:GetService("HttpService"),
+    CoreGui = game:GetService("CoreGui")
+}
+
+local LocalPlayer = Services.Players.LocalPlayer
+
+-- =================================================================
+-- PART 1: ADVANCED SERVER-SIDE ANTI-CHEAT SYSTEM
+-- =================================================================
+if Services.RunService:IsServer() then
+    local Config = {
+        MaxSpeed = 22,
+        MaxJump = 60,
+        MaxDistancePerSec = 80
+    }
+
+    local PlayerData = {}
+
+    local function OnPlayerAdded(player)
+        PlayerData[player] = {
+            LastPos = nil,
+            LastTime = tick(),
+            Warnings = 0
+        }
+
+        player.CharacterAdded:Connect(function(char)
+            local hum = char:WaitForChild("Humanoid", 10)
+            local hrp = char:WaitForChild("HumanoidRootPart", 10)
+            if not hum or not hrp then return end
+
+            PlayerData[player].LastPos = hrp.Position
+
+            hum:GetPropertyChangedSignal("WalkSpeed"):Connect(function()
+                if hum.WalkSpeed > Config.MaxSpeed then
+                    hum.WalkSpeed = 16
+                end
+            end)
+
+            hum:GetPropertyChangedSignal("JumpPower"):Connect(function()
+                if hum.JumpPower > Config.MaxJump then
+                    hum.JumpPower = 50
+                end
+            end)
+        end)
+    end
+
+    Services.Players.PlayerAdded:Connect(OnPlayerAdded)
+    Services.Players.PlayerRemoving:Connect(function(plr) PlayerData[plr] = nil end)
+
+    Services.RunService.Heartbeat:Connect(function()
+        for plr, data in pairs(PlayerData) do
+            if plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+                local hrp = plr.Character.HumanoidRootPart
+                local hum = plr.Character:FindFirstChildOfClass("Humanoid")
+
+                if hum and hum.Health > 0 and data.LastPos then
+                    local now = tick()
+                    local dt = now - data.LastTime
+                    if dt > 0.1 then
+                        local dist = (hrp.Position - data.LastPos).Magnitude
+                        local speed = dist / dt
+
+                        if speed > Config.MaxDistancePerSec then
+                            data.Warnings = data.Warnings + 1
+                            if data.Warnings >= 4 then
+                                plr:Kick("[2K13 Anti-Cheat]: Phát hiện dịch chuyển trái phép.")
+                            else
+                                hrp.CFrame = CFrame.new(data.LastPos)
+                            end
+                        else
+                            if data.Warnings > 0 then data.Warnings = data.Warnings - 0.1 end
+                        end
+                        data.LastPos = hrp.Position
+                        data.LastTime = now
+                    end
+                end
+            end
+        end
+    end)
+
+    print("[2K13 SERVER]: Anti-Cheat Engine Loaded!")
+end
+
+-- =================================================================
+-- PART 2: CLIENT GUI & ACCURATE AUTO FARM ENGINE
+-- =================================================================
+if Services.RunService:IsClient() then
+    local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+    local Camera = workspace.CurrentCamera
+
+    -- Dọn dẹp GUI cũ
+    pcall(function()
+        if PlayerGui:FindFirstChild("PyramidHub2K13_v2") then
+            PlayerGui["PyramidHub2K13_v2"]:Destroy()
+        end
+    end)
+
+    -- Từ khóa lọc chuẩn xác chống bấm bậy bạ
+    local TargetKeywords = {
+        Grab = {"block", "brick", "stone", "quarry", "resource", "pick", "grab", "ore", "khối", "gạch"},
+        Place = {"pyramid", "build", "place", "deposit", "foundation", "construct", "xây", "đặt"}
+    }
+
+    local Flags = {
+        AutoGrab = false,
+        AutoPlace = false,
+        AutoTrain = false,
+        MaxDistFilter = 25,
+        InfJump = false,
+        Noclip = false,
+        Fly = false,
+        FlySpeed = 50,
+        ESP = false,
+        Tracers = false,
+        Fullbright = false,
+        FPSBooster = false,
+        AntiAFK = false,
+        AutoRejoin = false
+    }
+
+    -- TẠO GIAO DIỆN CHÍNH (DARK THEME - NEON GREEN)
+    local ScreenGui = Instance.new("ScreenGui")
+    ScreenGui.Name = "PyramidHub2K13_v2"
+    ScreenGui.ResetOnSpawn = false
+    ScreenGui.Parent = PlayerGui
+
+    local MainFrame = Instance.new("Frame")
+    MainFrame.Size = UDim2.new(0, 330, 0, 490)
+    MainFrame.Position = UDim2.new(0.5, -165, 0.5, -245)
+    MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 18)
+    MainFrame.BorderSizePixel = 0
+    MainFrame.Visible = false
+    MainFrame.Parent = ScreenGui
+
+    local MainCorner = Instance.new("UICorner")
+    MainCorner.CornerRadius = UDim.new(0, 12)
+    MainCorner.Parent = MainFrame
+
+    local MainStroke = Instance.new("UIStroke")
+    MainStroke.Color = Color3.fromRGB(0, 255, 150)
+    MainStroke.Thickness = 2
+    MainStroke.Parent = MainFrame
+
+    -- Nút tròn Bật/Tắt Menu (2K13 Drag System)
+    local OpenBtn = Instance.new("TextButton")
+    OpenBtn.Size = UDim2.new(0, 55, 0, 55)
+    OpenBtn.Position = UDim2.new(0, 20, 0, 150)
+    OpenBtn.BackgroundColor3 = Color3.fromRGB(15, 15, 18)
+    OpenBtn.Text = "2K13"
+    OpenBtn.TextColor3 = Color3.fromRGB(0, 255, 150)
+    OpenBtn.TextSize = 13
+    OpenBtn.Font = Enum.Font.GothamBold
+    OpenBtn.Parent = ScreenGui
+
+    local OpenCorner = Instance.new("UICorner")
+    OpenCorner.CornerRadius = UDim.new(1, 0)
+    OpenCorner.Parent = OpenBtn
+
+    local OpenStroke = Instance.new("UIStroke")
+    OpenStroke.Color = Color3.fromRGB(0, 255, 150)
+    OpenStroke.Thickness = 2
+    OpenStroke.Parent = OpenBtn
+
+    -- Kéo thả nút 2K13 mượt mà trên di động
+    local dragging, dragInput, dragStart, startPos
+    OpenBtn.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPos = OpenBtn.Position
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then dragging = false end
+            end)
+        end
+    end)
+
+    OpenBtn.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+            dragInput = input
+        end
+    end)
+
+    Services.UserInputService.InputChanged:Connect(function(input)
+        if input == dragInput and dragging then
+            local delta = input.Position - dragStart
+            OpenBtn.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+    end)
+
+    OpenBtn.MouseButton1Click:Connect(function()
+        MainFrame.Visible = not MainFrame.Visible
+    end)
+
+    -- Thanh Tiêu Đề
+    local Header = Instance.new("Frame")
+    Header.Size = UDim2.new(1, 0, 0, 40)
+    Header.BackgroundColor3 = Color3.fromRGB(22, 22, 26)
+    Header.Parent = MainFrame
+
+    local HeaderCorner = Instance.new("UICorner")
+    HeaderCorner.CornerRadius = UDim.new(0, 12)
+    HeaderCorner.Parent = Header
+
+    local Title = Instance.new("TextLabel")
+    Title.Size = UDim2.new(1, -20, 1, 0)
+    Title.Position = UDim2.new(0, 12, 0, 0)
+    Title.BackgroundTransparency = 1
+    Title.Text = "BUILD THE PYRAMID - 2K13 HUB v2.1"
+    Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Title.TextSize = 11
+    Title.Font = Enum.Font.GothamBold
+    Title.TextXAlignment = Enum.TextXAlignment.Left
+    Title.Parent = Header
+
+    -- Hệ Thống Tabs
+    local NavContainer = Instance.new("Frame")
+    NavContainer.Size = UDim2.new(1, -20, 0, 32)
+    NavContainer.Position = UDim2.new(0, 10, 0, 48)
+    NavContainer.BackgroundTransparency = 1
+    NavContainer.Parent = MainFrame
+
+    local NavLayout = Instance.new("UIListLayout")
+    NavLayout.FillDirection = Enum.FillDirection.Horizontal
+    NavLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+    NavLayout.Padding = UDim.new(0, 6)
+    NavLayout.Parent = NavContainer
+
+    local ContentHolder = Instance.new("Frame")
+    ContentHolder.Size = UDim2.new(1, -20, 1, -90)
+    ContentHolder.Position = UDim2.new(0, 10, 0, 85)
+    ContentHolder.BackgroundTransparency = 1
+    ContentHolder.Parent = MainFrame
+
+    local Tabs, Pages = {}, {}
+
+    local function RegisterTab(name, order)
+        local Btn = Instance.new("TextButton")
+        Btn.Size = UDim2.new(0.23, 0, 1, 0)
+        Btn.BackgroundColor3 = Color3.fromRGB(22, 22, 26)
+        Btn.Text = name
+        Btn.TextColor3 = Color3.fromRGB(140, 140, 140)
+        Btn.TextSize = 9
+        Btn.Font = Enum.Font.GothamBold
+        Btn.LayoutOrder = order
+        Btn.Parent = NavContainer
+
+        local BtnCorner = Instance.new("UICorner")
+        BtnCorner.CornerRadius = UDim.new(0, 6)
+        BtnCorner.Parent = Btn
+
+        local Page = Instance.new("ScrollingFrame")
+        Page.Size = UDim2.new(1, 0, 1, 0)
+        Page.BackgroundTransparency = 1
+        Page.BorderSizePixel = 0
+        Page.ScrollBarThickness = 2
+        Page.ScrollBarImageColor3 = Color3.fromRGB(0, 255, 150)
+        Page.Visible = false
+        Page.Parent = ContentHolder
+
+        local PageLayout = Instance.new("UIListLayout")
+        PageLayout.SortOrder = Enum.SortOrder.LayoutOrder
+        PageLayout.Padding = UDim.new(0, 6)
+        PageLayout.Parent = Page
+
+        PageLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+            Page.CanvasSize = UDim2.new(0, 0, 0, PageLayout.AbsoluteContentSize.Y + 12)
+        end)
+
+        Tabs[name] = Btn
+        Pages[name] = Page
+
+        Btn.MouseButton1Click:Connect(function()
+            for _, b in pairs(Tabs) do
+                b.TextColor3 = Color3.fromRGB(140, 140, 140)
+                b.BackgroundColor3 = Color3.fromRGB(22, 22, 26)
+            end
+            for _, p in pairs(Pages) do p.Visible = false end
+            Btn.TextColor3 = Color3.fromRGB(0, 255, 150)
+            Btn.BackgroundColor3 = Color3.fromRGB(32, 32, 38)
+            Page.Visible = true
+        end)
+    end
+
+    RegisterTab("FARM", 1)
+    RegisterTab("MOVE", 2)
+    RegisterTab("VISUAL", 3)
+    RegisterTab("MISC", 4)
+
+    Tabs["FARM"].TextColor3 = Color3.fromRGB(0, 255, 150)
+    Tabs["FARM"].BackgroundColor3 = Color3.fromRGB(32, 32, 38)
+    Pages["FARM"].Visible = true
+
+    -- UI Component Builders
+    local function AddToggle(parent, text, callback)
+        local state = false
+        local Btn = Instance.new("TextButton")
+        Btn.Size = UDim2.new(1, -5, 0, 34)
+        Btn.BackgroundColor3 = Color3.fromRGB(24, 24, 28)
+        Btn.Text = text .. ": OFF"
+        Btn.TextColor3 = Color3.fromRGB(255, 70, 70)
+        Btn.Font = Enum.Font.GothamMedium
+        Btn.TextSize = 10
+        Btn.Parent = parent
+
+        local Corner = Instance.new("UICorner")
+        Corner.CornerRadius = UDim.new(0, 6)
+        Corner.Parent = Btn
+
+        Btn.MouseButton1Click:Connect(function()
+            state = not state
+            Btn.Text = text .. (state and ": ON" or ": OFF")
+            Btn.TextColor3 = state and Color3.fromRGB(0, 255, 150) or Color3.fromRGB(255, 70, 70)
+            callback(state)
+        end)
+    end
+
+    local function AddButton(parent, text, callback)
+        local Btn = Instance.new("TextButton")
+        Btn.Size = UDim2.new(1, -5, 0, 34)
+        Btn.BackgroundColor3 = Color3.fromRGB(24, 24, 28)
+        Btn.Text = text
+        Btn.TextColor3 = Color3.fromRGB(240, 240, 240)
+        Btn.Font = Enum.Font.GothamMedium
+        Btn.TextSize = 10
+        Btn.Parent = parent
+
+        local Corner = Instance.new("UICorner")
+        Corner.CornerRadius = UDim.new(0, 6)
+        Corner.Parent = Btn
+
+        Btn.MouseButton1Click:Connect(function() callback() end)
+    end
+
+    -- Hàm lọc thông minh chống bấm bậy
+    local function IsValidTarget(prompt, keywords)
+        if not prompt or not prompt.Parent then return false end
+        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            local hrp = LocalPlayer.Character.HumanoidRootPart
+            local parentPart = prompt.Parent:IsA("BasePart") and prompt.Parent or prompt.Parent:FindFirstChildWhichIsA("BasePart")
+            if parentPart then
+                local dist = (hrp.Position - parentPart.Position).Magnitude
+                if dist > Flags.MaxDistFilter then return false end
+            end
+        end
+
+        local fullPath = prompt:GetFullName():lower()
+        local actionText = prompt.ActionText:lower()
+        local objectText = prompt.ObjectText:lower()
+
+        for _, kw in pairs(keywords) do
+            if fullPath:find(kw) or actionText:find(kw) or objectText:find(kw) then
+                return true
+            end
+        end
+        return false
+    end
+
+    -- TAB 1: FARM
+    AddToggle(Pages["FARM"], "Smart Auto Grab (Lấy gạch chuẩn)", function(v) Flags.AutoGrab = v end)
+    AddToggle(Pages["FARM"], "Smart Auto Place (Đặt gạch chuẩn)", function(v) Flags.AutoPlace = v end)
+    AddToggle(Pages["FARM"], "Auto Clicker/Train (Tự bấm tập)", function(v) Flags.AutoTrain = v end)
+
+    task.spawn(function()
+        while task.wait(0.12) do
+            pcall(function()
+                if Flags.AutoGrab or Flags.AutoPlace then
+                    for _, prompt in pairs(workspace:GetDescendants()) do
+                        if prompt:IsA("ProximityPrompt") and prompt.Enabled then
+                            if Flags.AutoGrab and IsValidTarget(prompt, TargetKeywords.Grab) then
+                                fireproximityprompt(prompt)
+                            elseif Flags.AutoPlace and IsValidTarget(prompt, TargetKeywords.Place) then
+                                fireproximityprompt(prompt)
+                            end
+                        end
+                    end
+                end
+
+                if Flags.AutoTrain then
+                    Services.VirtualUser:Button1Down(Vector2.new(0, 0), Camera.CFrame)
+                    task.wait(0.04)
+                    Services.VirtualUser:Button1Up(Vector2.new(0, 0), Camera.CFrame)
+                end
+            end)
+        end
+    end)
+
+    -- TAB 2: MOVE
+    AddToggle(Pages["MOVE"], "Infinite Jump (Nhảy vô tận)", function(v) Flags.InfJump = v end)
+    AddToggle(Pages["MOVE"], "Noclip (Xuyên vật thể)", function(v) Flags.Noclip = v end)
+    AddToggle(Pages["MOVE"], "Fly Mode (Tự do bay)", function(v) Flags.Fly = v end)
+
+    AddButton(Pages["MOVE"], "Set Speed 100", function()
+        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+            LocalPlayer.Character.Humanoid.WalkSpeed = 100
+        end
+    end)
+
+    AddButton(Pages["MOVE"], "Set JumpPower 130", function()
+        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+            LocalPlayer.Character.Humanoid.JumpPower = 130
+        end
+    end)
+
+    Services.UserInputService.JumpRequest:Connect(function()
+        if Flags.InfJump and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+            LocalPlayer.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+        end
+    end)
+
+    Services.RunService.Stepped:Connect(function()
+        if Flags.Noclip and LocalPlayer.Character then
+            for _, p in pairs(LocalPlayer.Character:GetDescendants()) do
+                if p:IsA("BasePart") then p.CanCollide = false end
+            end
+        end
+    end)
+
+    Services.RunService.RenderStepped:Connect(function()
+        if Flags.Fly and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            local hrp = LocalPlayer.Character.HumanoidRootPart
+            local hum = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+            if hum then hum.PlatformStand = true end
+
+            local bg = hrp:FindFirstChild("FlyGyro") or Instance.new("BodyGyro", hrp)
+            bg.Name = "FlyGyro"
+            bg.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
+            bg.P = 9e4
+            bg.CFrame = Camera.CFrame
+
+            local bv = hrp:FindFirstChild("FlyVelocity") or Instance.new("BodyVelocity", hrp)
+            bv.Name = "FlyVelocity"
+            bv.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+            bv.Velocity = Camera.CFrame.LookVector * Flags.FlySpeed
+        end
+    end)
+
+    -- TAB 3: VISUAL
+    local ESPCache = {}
+    local function CreateESP(targetPlr)
+        local Box = Drawing.new("Square")
+        Box.Visible = false
+        Box.Color = Color3.fromRGB(0, 255, 150)
+        Box.Thickness = 1.5
+
+        local Line = Drawing.new("Line")
+        Line.Visible = false
+        Line.Color = Color3.fromRGB(0, 255, 150)
+        Line.Thickness = 1
+
+        ESPCache[targetPlr] = {Box = Box, Line = Line}
+    end
+
+    for _, p in pairs(Services.Players:GetPlayers()) do
+        if p ~= LocalPlayer then CreateESP(p) end
+    end
+    Services.Players.PlayerAdded:Connect(function(p)
+        if p ~= LocalPlayer then CreateESP(p) end
+    end)
+
+    AddToggle(Pages["VISUAL"], "Box ESP (Khung người)", function(v) Flags.ESP = v end)
+    AddToggle(Pages["VISUAL"], "Tracers (Tia định vị)", function(v) Flags.Tracers = v end)
+    AddToggle(Pages["VISUAL"], "Fullbright (Sáng bản đồ)", function(v)
+        Flags.Fullbright = v
+        Services.Lighting.Ambient = v and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(128, 128, 128)
+        Services.Lighting.Brightness = v and 2 or 1
+    end)
+
+    Services.RunService.RenderStepped:Connect(function()
+        for plr, draw in pairs(ESPCache) do
+            if Flags.ESP and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+                local pos, vis = Camera:WorldToViewportPoint(plr.Character.HumanoidRootPart.Position)
+                if vis then
+                    draw.Box.Size = Vector2.new(22, 36)
+                    draw.Box.Position = Vector2.new(pos.X - 11, pos.Y - 18)
+                    draw.Box.Visible = true
+                else draw.Box.Visible = false end
+            else draw.Box.Visible = false end
+
+            if Flags.Tracers and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+                local pos, vis = Camera:WorldToViewportPoint(plr.Character.HumanoidRootPart.Position)
+                if vis then
+                    draw.Line.From = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y)
+                    draw.Line.To = Vector2.new(pos.X, pos.Y)
+                    draw.Line.Visible = true
+                else draw.Line.Visible = false end
+            else draw.Line.Visible = false end
+        end
+    end)
+
+    -- TAB 4: MISC
+    AddToggle(Pages["MISC"], "Anti-AFK System (Chống văng)", function(v) Flags.AntiAFK = v end)
+    AddToggle(Pages["MISC"], "Auto Rejoin khi mất kết nối", function(v) Flags.AutoRejoin = v end)
+
+    AddButton(Pages["MISC"], "Rejoin Game Ngay", function()
+        Services.TeleportService:Teleport(game.PlaceId, LocalPlayer)
+    end)
+
+    LocalPlayer.Idled:Connect(function()
+        if Flags.AntiAFK then
+            Services.VirtualUser:Button2Down(Vector2.new(0, 0), Camera.CFrame)
+            task.wait(1)
+            Services.VirtualUser:Button2Up(Vector2.new(0, 0), Camera.CFrame)
+        end
+    end)
+
+    Services.CoreGui.RobloxPromptGui.promptOverlay.ChildAdded:Connect(function(child)
+        if Flags.AutoRejoin and child.Name == "ErrorPrompt" then
+            Services.TeleportService:Teleport(game.PlaceId, LocalPlayer)
+        end
+    end)
+
+    print("[2K13 CLIENT]: Hub Loaded Cleanly (No Rainbow UI)!")
+end
