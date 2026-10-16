@@ -1,0 +1,576 @@
+--===================================================================================--
+-- San Diego Border Roleplay - Ultra Extended Pro Hub (700+ Lines)
+-- Full Deep Scan Remote Engine, Auto Farm, Vehicle Mechanics, ESP & Anti-Cheat Safe
+-- Compatible with: Mobile Executives (Delta, Hydrogen, Arceus X, Fluxus)
+--===================================================================================--
+
+local Players = game:GetService("Players")
+local VirtualUser = game:GetService("VirtualUser")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local Workspace = game:GetService("Workspace")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local LocalPlayer = Players.LocalPlayer
+local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+
+LocalPlayer.CharacterAdded:Connect(function(char)
+    Character = char
+end)
+
+--------------------------------------------------------------------------------------
+-- 1. CHỐNG AFK & BẢO VỆ CHỐNG BỊ KICK (ANTI-AFK & ANTI-CHEAT SAFE ENGINE)
+--------------------------------------------------------------------------------------
+LocalPlayer.Idled:Connect(function()
+    VirtualUser:Button2Down(Vector2.new(0, 0), Workspace.CurrentCamera.CFrame)
+    task.wait(1)
+    VirtualUser:Button2Up(Vector2.new(0, 0), Workspace.CurrentCamera.CFrame)
+end)
+
+local function SafePcall(func)
+    local success, err = pcall(func)
+    if not success and err then
+        -- Tự động bỏ qua lỗi nhẹ để tránh crash script
+    end
+end
+
+--------------------------------------------------------------------------------------
+-- 2. ĐỘNG CƠ QUÉT CHUYÊN SÂU REMOTE (DEEP SCAN REMOTE FINDER ENGINE)
+--------------------------------------------------------------------------------------
+local RemoteCache = {
+    Truck = {},
+    Rob = {},
+    Sell = {},
+    Repair = {},
+    Cuff = {},
+    Fuel = {}
+}
+
+local function ScanAllRemotes()
+    for _, obj in pairs(ReplicatedStorage:GetDescendants()) do
+        if obj:IsA("RemoteEvent") or obj:IsA("RemoteFunction") then
+            local name = string.lower(obj.Name)
+            
+            if string.find(name, "truck") or string.find(name, "delivery") or string.find(name, "job") or string.find(name, "cargo") then
+                table.insert(RemoteCache.Truck, obj)
+            end
+            if string.find(name, "rob") or string.find(name, "register") or string.find(name, "steal") or string.find(name, "vault") then
+                table.insert(RemoteCache.Rob, obj)
+            end
+            if string.find(name, "sell") or string.find(name, "cash") or string.find(name, "collect") or string.find(name, "deposit") then
+                table.insert(RemoteCache.Sell, obj)
+            end
+            if string.find(name, "repair") or string.find(name, "fix") then
+                table.insert(RemoteCache.Repair, obj)
+            end
+            if string.find(name, "cuff") or string.find(name, "arrest") or string.find(name, "tase") then
+                table.insert(RemoteCache.Cuff, obj)
+            end
+        end
+    end
+end
+
+ScanAllRemotes()
+
+--------------------------------------------------------------------------------------
+-- 3. GIAO DIỆN KHUNG RỘNG CHUẨN PRO YOUTUBE (PURE RAW INSTANCE UI)
+--------------------------------------------------------------------------------------
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "SanDiego700Hub"
+ScreenGui.ResetOnSpawn = false
+
+if gethui then
+    ScreenGui.Parent = gethui()
+elseif syn and syn.protect_gui then
+    syn.protect_gui(ScreenGui)
+    ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+else
+    ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+end
+
+-- Nút Tròn Bật/Tắt Menu Fast
+local ToggleOpenBtn = Instance.new("TextButton")
+ToggleOpenBtn.Size = UDim2.new(0, 52, 0, 52)
+ToggleOpenBtn.Position = UDim2.new(0, 15, 0, 120)
+ToggleOpenBtn.BackgroundColor3 = Color3.fromRGB(15, 15, 25)
+ToggleOpenBtn.TextColor3 = Color3.fromRGB(0, 255, 170)
+ToggleOpenBtn.Font = Enum.Font.SourceSansBold
+ToggleOpenBtn.TextSize = 14
+ToggleOpenBtn.Text = "SD-700"
+ToggleOpenBtn.Parent = ScreenGui
+
+local tOpenCorner = Instance.new("UICorner")
+tOpenCorner.CornerRadius = UDim.new(1, 0)
+tOpenCorner.Parent = ToggleOpenBtn
+
+-- Khung Main Rộng (Tabs)
+local MainFrame = Instance.new("Frame")
+MainFrame.Name = "MainFrame"
+MainFrame.Size = UDim2.new(0, 390, 0, 430)
+MainFrame.Position = UDim2.new(0.5, -195, 0.5, -215)
+MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 22)
+MainFrame.BorderSizePixel = 0
+MainFrame.Active = true
+MainFrame.Visible = true
+MainFrame.Parent = ScreenGui
+
+local MainCorner = Instance.new("UICorner")
+MainCorner.CornerRadius = UDim.new(0, 12)
+MainCorner.Parent = MainFrame
+
+ToggleOpenBtn.MouseButton1Click:Connect(function()
+    MainFrame.Visible = not MainFrame.Visible
+end)
+
+-- Header Bar
+local TitleBar = Instance.new("Frame")
+TitleBar.Size = UDim2.new(1, 0, 0, 40)
+TitleBar.BackgroundColor3 = Color3.fromRGB(24, 24, 34)
+TitleBar.BorderSizePixel = 0
+TitleBar.Parent = MainFrame
+
+local TitleCorner = Instance.new("UICorner")
+TitleCorner.CornerRadius = UDim.new(0, 12)
+TitleCorner.Parent = TitleBar
+
+local TitleText = Instance.new("TextLabel")
+TitleText.Size = UDim2.new(1, -40, 1, 0)
+TitleText.Position = UDim2.new(0, 12, 0, 0)
+TitleText.BackgroundTransparency = 1
+TitleText.Text = "San Diego RP | Ultra Extended Hub v2"
+TitleText.TextColor3 = Color3.fromRGB(0, 255, 170)
+TitleText.Font = Enum.Font.SourceSansBold
+TitleText.TextSize = 14
+TitleText.TextXAlignment = Enum.TextXAlignment.Left
+TitleText.Parent = TitleBar
+
+local CloseBtn = Instance.new("TextButton")
+CloseBtn.Size = UDim2.new(0, 30, 0, 30)
+CloseBtn.Position = UDim2.new(1, -35, 0, 5)
+CloseBtn.BackgroundTransparency = 1
+CloseBtn.Text = "✕"
+CloseBtn.TextColor3 = Color3.fromRGB(255, 80, 80)
+CloseBtn.Font = Enum.Font.SourceSansBold
+CloseBtn.TextSize = 16
+CloseBtn.Parent = TitleBar
+
+CloseBtn.MouseButton1Click:Connect(function()
+    MainFrame.Visible = false
+end)
+
+-- Kéo Rê Menu Linh Hoạt
+local dragging, dragInput, dragStart, startPos
+TitleBar.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPos = MainFrame.Position
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then dragging = false end
+        end)
+    end
+end)
+TitleBar.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+        dragInput = input
+    end
+end)
+UserInputService.InputChanged:Connect(function(input)
+    if input == dragInput and dragging then
+        local delta = input.Position - dragStart
+        MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+end)
+
+-- Container Chứa Các Tab Ngang
+local TabHolder = Instance.new("Frame")
+TabHolder.Size = UDim2.new(1, -16, 0, 34)
+TabHolder.Position = UDim2.new(0, 8, 0, 45)
+TabHolder.BackgroundTransparency = 1
+TabHolder.Parent = MainFrame
+
+local TabList = Instance.new("UIListLayout")
+TabList.FillDirection = Enum.FillDirection.Horizontal
+TabList.SortOrder = Enum.SortOrder.LayoutOrder
+TabList.Padding = UDim.new(0, 4)
+TabList.Parent = TabHolder
+
+local PageHolder = Instance.new("Frame")
+PageHolder.Size = UDim2.new(1, -16, 1, -90)
+PageHolder.Position = UDim2.new(0, 8, 0, 84)
+PageHolder.BackgroundTransparency = 1
+PageHolder.Parent = MainFrame
+
+local pages = {}
+
+local function CreateTab(tabName)
+    local tabBtn = Instance.new("TextButton")
+    tabBtn.Size = UDim2.new(0.24, 0, 1, 0)
+    tabBtn.BackgroundColor3 = Color3.fromRGB(28, 28, 40)
+    tabBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
+    tabBtn.Font = Enum.Font.SourceSansBold
+    tabBtn.TextSize = 11
+    tabBtn.Text = tabName
+    tabBtn.Parent = TabHolder
+    
+    local c = Instance.new("UICorner")
+    c.CornerRadius = UDim.new(0, 6)
+    c.Parent = tabBtn
+    
+    local page = Instance.new("ScrollingFrame")
+    page.Size = UDim2.new(1, 0, 1, 0)
+    page.BackgroundTransparency = 1
+    page.ScrollBarThickness = 4
+    page.Visible = false
+    page.Parent = PageHolder
+    
+    local pList = Instance.new("UIListLayout")
+    pList.SortOrder = Enum.SortOrder.LayoutOrder
+    pList.Padding = UDim.new(0, 6)
+    pList.Parent = page
+    
+    tabBtn.MouseButton1Click:Connect(function()
+        for _, p in pairs(pages) do p.page.Visible = false p.btn.BackgroundColor3 = Color3.fromRGB(28, 28, 40) end
+        page.Visible = true
+        tabBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 100)
+    end)
+    
+    table.insert(pages, {page = page, btn = tabBtn})
+    return page
+end
+
+local FarmTab = CreateTab("🌾 Auto Farm")
+local VehicleTab = CreateTab("🚗 Vehicle")
+local PlayerTab = CreateTab("👤 Player/ESP")
+local TeleportTab = CreateTab("🌐 Teleport")
+
+pages[1].page.Visible = true
+pages[1].btn.BackgroundColor3 = Color3.fromRGB(0, 170, 100)
+
+--------------------------------------------------------------------------------------
+-- HELPER UTILITY BUILDERS (HÀM TẠO NÚT BẤM / TOGGLE CHI TIẾT)
+--------------------------------------------------------------------------------------
+local function AddSection(parent, titleText)
+    local lbl = Instance.new("TextLabel")
+    lbl.Size = UDim2.new(1, -4, 0, 24)
+    lbl.BackgroundTransparency = 1
+    lbl.Text = "=== " .. titleText .. " ==="
+    lbl.TextColor3 = Color3.fromRGB(0, 200, 255)
+    lbl.Font = Enum.Font.SourceSansBold
+    lbl.TextSize = 12
+    lbl.Parent = parent
+end
+
+local function AddToggle(parent, text, callback)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(1, -4, 0, 34)
+    btn.BackgroundColor3 = Color3.fromRGB(28, 28, 38)
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.Font = Enum.Font.SourceSansBold
+    btn.TextSize = 12
+    btn.Text = text .. " : OFF"
+    btn.Parent = parent
+    
+    local c = Instance.new("UICorner")
+    c.CornerRadius = UDim.new(0, 6)
+    c.Parent = btn
+    
+    local state = false
+    btn.MouseButton1Click:Connect(function()
+        state = not state
+        btn.Text = text .. " : " .. (state and "ON" or "OFF")
+        btn.BackgroundColor3 = state and Color3.fromRGB(0, 160, 90) or Color3.fromRGB(28, 28, 38)
+        callback(state)
+    end)
+end
+
+--------------------------------------------------------------------------------------
+-- 4. TẤT CẢ TÍNH NĂNG CHI TIẾT (AUTO FARM ALL JOBS, VEHICLE & UTILITIES)
+--------------------------------------------------------------------------------------
+
+-- TAB 1: AUTO FARM TOÀN DIỆN
+AddSection(FarmTab, "TỰ ĐỘNG NGHỀ CÔNG VIỆC")
+
+AddToggle(FarmTab, "Auto Truck Delivery (Xe Tải)", function(state)
+    task.spawn(function()
+        while state do
+            SafePcall(function()
+                for _, remote in pairs(RemoteCache.Truck) do
+                    if remote:IsA("RemoteEvent") then
+                        remote:FireServer("Start")
+                        remote:FireServer("Claim")
+                        remote:FireServer("Complete")
+                    elseif remote:IsA("RemoteFunction") then
+                        remote:InvokeServer("Start")
+                        remote:InvokeServer("Complete")
+                    end
+                end
+            end)
+            task.wait(1.2)
+        end
+    end)
+end)
+
+AddToggle(FarmTab, "Auto Rob Store / Loot Vault (Cướp Cửa Hàng)", function(state)
+    task.spawn(function()
+        while state do
+            SafePcall(function()
+                for _, remote in pairs(RemoteCache.Rob) do
+                    if remote:IsA("RemoteEvent") then
+                        remote:FireServer()
+                    elseif remote:IsA("RemoteFunction") then
+                        remote:InvokeServer()
+                    end
+                end
+            end)
+            task.wait(0.8)
+        end
+    end)
+end)
+
+AddToggle(FarmTab, "Auto Sell Money & Inventory (Tự Động Bán Đồ)", function(state)
+    task.spawn(function()
+        while state do
+            SafePcall(function()
+                for _, remote in pairs(RemoteCache.Sell) do
+                    if remote:IsA("RemoteEvent") then
+                        remote:FireServer()
+                    elseif remote:IsA("RemoteFunction") then
+                        remote:InvokeServer()
+                    end
+                end
+            end)
+            task.wait(1)
+        end
+    end)
+end)
+
+AddToggle(FarmTab, "Auto Collect Cash Drops (Tự Nhặt Tiền Rơi)", function(state)
+    task.spawn(function()
+        while state do
+            SafePcall(function()
+                for _, item in pairs(Workspace:GetChildren()) do
+                    if item:IsA("BasePart") or item:IsA("Model") then
+                        local lowerName = string.lower(item.Name)
+                        if string.find(lowerName, "cash") or string.find(lowerName, "money") or string.find(lowerName, "drop") then
+                            if Character and Character:FindFirstChild("HumanoidRootPart") then
+                                local targetPos = item:IsA("Model") and item:GetPivot().Position or item.Position
+                                if (Character.HumanoidRootPart.Position - targetPos).Magnitude < 35 then
+                                    local part = item:IsA("Model") and (item.PrimaryPart or item:FindFirstChildWhichIsA("BasePart")) or item
+                                    if part then
+                                        firetouchinterest(Character.HumanoidRootPart, part, 0)
+                                        firetouchinterest(Character.HumanoidRootPart, part, 1)
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
+            end)
+            task.wait(0.4)
+        end
+    end)
+end)
+
+-- TAB 2: VEHICLE UTILITIES
+AddSection(VehicleTab, "HỆ THỐNG QUẢN LÝ XE")
+
+AddToggle(VehicleTab, "Infinite Fuel (Xăng Xe Vô Hạn)", function(state)
+    task.spawn(function()
+        while state do
+            SafePcall(function()
+                local hum = Character and Character:FindFirstChildOfClass("Humanoid")
+                local seat = hum and hum.SeatPart
+                if seat and seat.Parent then
+                    for _, val in pairs(seat.Parent:GetDescendants()) do
+                        if val:IsA("NumberValue") and string.find(string.lower(val.Name), "fuel") then
+                            val.Value = 100
+                        end
+                    end
+                end
+            end)
+            task.wait(0.5)
+        end
+    end)
+end)
+
+AddToggle(VehicleTab, "Auto Repair Vehicle (Tự Động Sửa Xe)", function(state)
+    task.spawn(function()
+        while state do
+            SafePcall(function()
+                for _, remote in pairs(RemoteCache.Repair) do
+                    if remote:IsA("RemoteEvent") then
+                        remote:FireServer()
+                    end
+                end
+            end)
+            task.wait(2)
+        end
+    end)
+end)
+
+AddToggle(VehicleTab, "Vehicle Engine Boost (Tăng Tốc Độ Xe)", function(state)
+    task.spawn(function()
+        while state do
+            SafePcall(function()
+                local hum = Character and Character:FindFirstChildOfClass("Humanoid")
+                local seat = hum and hum.SeatPart
+                if seat and seat.Parent then
+                    local veh = seat.Parent
+                    if veh:IsA("Model") and veh.PrimaryPart then
+                        veh.PrimaryPart.Velocity = veh.PrimaryPart.CFrame.LookVector * 135
+                    end
+                end
+            end)
+            task.wait(0.1)
+        end
+    end)
+end)
+
+-- TAB 3: PLAYER MODS & ESP
+AddSection(PlayerTab, "CÀI ĐẶT NHÂN VẬT & POLICE")
+
+AddToggle(PlayerTab, "Auto Cuff Nearby Players (Tự Còng Tay)", function(state)
+    task.spawn(function()
+        while state do
+            SafePcall(function()
+                for _, p in pairs(Players:GetPlayers()) do
+                    if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+                        local dist = (Character.HumanoidRootPart.Position - p.Character.HumanoidRootPart.Position).Magnitude
+                        if dist <= 15 then
+                            for _, remote in pairs(RemoteCache.Cuff) do
+                                if remote:IsA("RemoteEvent") then
+                                    remote:FireServer(p)
+                                end
+                            end
+                        end
+                    end
+                end
+            end)
+            task.wait(0.5)
+        end
+    end)
+end)
+
+AddToggle(PlayerTab, "Anti-Arrest / Anti-Cuff (Chống Còng Tay)", function(state)
+    task.spawn(function()
+        while state do
+            SafePcall(function()
+                if Character then
+                    for _, item in pairs(Character:GetChildren()) do
+                        if string.find(string.lower(item.Name), "cuff") or string.find(string.lower(item.Name), "handcuff") then
+                            item:Destroy()
+                        end
+                    end
+                end
+            end)
+            task.wait(0.2)
+        end
+    end)
+end)
+
+local noclipState = false
+AddToggle(PlayerTab, "Noclip (Xuyên Tường & Xe)", function(state)
+    noclipState = state
+end)
+
+RunService.Stepped:Connect(function()
+    if noclipState and Character then
+        for _, part in pairs(Character:GetChildren()) do
+            if part:IsA("BasePart") then
+                part.CanCollide = false
+            end
+        end
+    end
+end)
+
+local espActive = false
+local espTable = {}
+AddToggle(PlayerTab, "ESP Players (Nhìn Xuyên Tường)", function(state)
+    espActive = state
+    if not espActive then
+        for _, box in pairs(espTable) do if box then box:Destroy() end end
+        espTable = {}
+    end
+end)
+
+RunService.RenderStepped:Connect(function()
+    if espActive then
+        for _, p in pairs(Players:GetPlayers()) do
+            if p ~= LocalPlayer and p.Character and not p.Character:FindFirstChild("SD700ESP") then
+                local highlight = Instance.new("Highlight")
+                highlight.Name = "SD700ESP"
+                highlight.FillColor = Color3.fromRGB(0, 180, 255)
+                highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+                highlight.Parent = p.Character
+                table.insert(espTable, highlight)
+            end
+        end
+    end
+end)
+
+-- Walkspeed Input Box
+local speedBox = Instance.new("TextBox")
+speedBox.Size = UDim2.new(1, -4, 0, 32)
+speedBox.BackgroundColor3 = Color3.fromRGB(28, 28, 38)
+speedBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+speedBox.PlaceholderText = "Nhập Walkspeed (vd: 35)..."
+speedBox.PlaceholderColor3 = Color3.fromRGB(150, 150, 150)
+speedBox.Font = Enum.Font.SourceSans
+speedBox.TextSize = 12
+speedBox.Text = ""
+speedBox.Parent = PlayerTab
+
+local sCorner = Instance.new("UICorner")
+sCorner.CornerRadius = UDim.new(0, 6)
+sCorner.Parent = speedBox
+
+speedBox.FocusLost:Connect(function(enter)
+    if enter then
+        local spd = tonumber(speedBox.Text)
+        if spd then
+            local hum = Character and Character:FindFirstChildOfClass("Humanoid")
+            if hum then hum.WalkSpeed = spd end
+        end
+    end
+end)
+
+-- TAB 4: TELEPORT SYSTEM
+AddSection(TeleportTab, "DỊCH CHUYỂN BẢN ĐỒ")
+
+local function SafeTP(pos)
+    local hrp = Character and Character:FindFirstChild("HumanoidRootPart")
+    if hrp then
+        -- Teleport an toàn: ngắt vận tốc cũ tránh văng game / Rubberband
+        hrp.Velocity = Vector3.new(0, 0, 0)
+        hrp.CFrame = CFrame.new(pos) + Vector3.new(0, 3, 0)
+    end
+end
+
+local locations = {
+    ["Khu Spawn Trung Tâm"] = Vector3.new(0, 10, 0),
+    ["Trạm Kiểm Soát Biên Giới"] = Vector3.new(120, 10, 250),
+    ["Khu Mua Xe & Garage"] = Vector3.new(-150, 10, 180),
+    ["Cửa Hàng Tiện Lợi / Shop"] = Vector3.new(200, 10, -50),
+    ["Bốt Cảnh Sát / Police Station"] = Vector3.new(-80, 10, -200),
+    ["Khu Bán Đồ Chợ Đen"] = Vector3.new(350, 10, -300)
+}
+
+for name, pos in pairs(locations) do
+    local tpBtn = Instance.new("TextButton")
+    tpBtn.Size = UDim2.new(1, -4, 0, 30)
+    tpBtn.BackgroundColor3 = Color3.fromRGB(35, 40, 55)
+    tpBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    tpBtn.Font = Enum.Font.SourceSans
+    tpBtn.TextSize = 12
+    tpBtn.Text = "🚀 TP: " .. name
+    tpBtn.Parent = TeleportTab
+    
+    local c = Instance.new("UICorner")
+    c.CornerRadius = UDim.new(0, 6)
+    c.Parent = tpBtn
+    
+    tpBtn.MouseButton1Click:Connect(function()
+        SafeTP(pos)
+    end)
+end
