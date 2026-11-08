@@ -1,0 +1,501 @@
+-- [[ TOICHIMUONCC HUB - PRO ULTIMATE EDITION (BILINGUAL: EN/VN) ]] --
+-- Tương thích: Delta Mobile / Arceus X
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local player = Players.LocalPlayer
+
+-- 1. Anti-Cheat Bypass Base
+pcall(function()
+    if getgenv then
+        getgenv().SecureMode = true
+    end
+    local mt = getrawmetatable(game)
+    setreadonly(mt, false)
+    local old = mt.__namecall
+    mt.__namecall = newcclosure(function(self, ...)
+        local method = getnamecallmethod()
+        if method == "Kick" and self == player then
+            return
+        end
+        return old(self, ...)
+    end)
+    setreadonly(mt, true)
+end)
+
+-- Xóa UI cũ nếu có
+if player.PlayerGui:FindFirstChild("ToichimuonccUI") then
+    player.PlayerGui.ToichimuonccUI:Destroy()
+end
+
+-- Biến lưu trữ trạng thái
+local pos1, pos2, pos3 = nil, nil, nil
+local use1, use2, use3 = true, true, true
+local isTeleporting = false
+local isAfkActive = false
+local isSpeedActive = false
+local speedValue = 50
+local isNoclipActive = false
+local isFlyActive = false
+local isSpectating = false
+local spectatingTarget = nil
+local flyControl = nil
+
+-- 2. ScreenGui Chính
+local sg = Instance.new("ScreenGui")
+sg.Name = "ToichimuonccUI"
+sg.ResetOnSpawn = false
+sg.Parent = player:WaitForChild("PlayerGui")
+
+-- Nút Tròn Mở/Đóng Menu
+local openBtn = Instance.new("TextButton")
+openBtn.Name = "OpenButton"
+openBtn.Size = UDim2.new(0, 50, 0, 50)
+openBtn.Position = UDim2.new(0.02, 0, 0.2, 0)
+openBtn.BackgroundColor3 = Color3.fromRGB(0, 122, 255)
+openBtn.Text = "HUB"
+openBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+openBtn.TextSize = 14
+openBtn.Font = Enum.Font.SourceSansBold
+openBtn.Active = true
+openBtn.Draggable = true
+openBtn.Parent = sg
+
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(1, 0)
+corner.Parent = openBtn
+
+-- Khung Menu Chính
+local frame = Instance.new("Frame")
+frame.Name = "MainFrame"
+frame.Size = UDim2.new(0, 240, 0, 340)
+frame.Position = UDim2.new(0.1, 0, 0.15, 0)
+frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+frame.BorderSizePixel = 0
+frame.Active = true
+frame.Draggable = true
+frame.Visible = true
+frame.Parent = sg
+
+local frameCorner = Instance.new("UICorner")
+frameCorner.CornerRadius = UDim.new(0, 8)
+frameCorner.Parent = frame
+
+-- Tiêu đề Menu
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, 0, 0, 30)
+title.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+title.Text = "Toichimuoncc Hub Pro"
+title.TextColor3 = Color3.fromRGB(255, 255, 255)
+title.TextSize = 12
+title.Font = Enum.Font.SourceSansBold
+title.Parent = frame
+
+local titleCorner = Instance.new("UICorner")
+titleCorner.CornerRadius = UDim.new(0, 8)
+titleCorner.Parent = title
+
+-- 3. Hệ Thống Tabs (Main & Setting)
+local tabMainBtn = Instance.new("TextButton")
+tabMainBtn.Size = UDim2.new(0.5, 0, 0, 28)
+tabMainBtn.Position = UDim2.new(0, 0, 0, 30)
+tabMainBtn.BackgroundColor3 = Color3.fromRGB(0, 122, 255)
+tabMainBtn.Text = "MAIN / CHÍNH"
+tabMainBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+tabMainBtn.TextSize = 11
+tabMainBtn.Font = Enum.Font.SourceSansBold
+tabMainBtn.Parent = frame
+
+local tabSettingBtn = Instance.new("TextButton")
+tabSettingBtn.Size = UDim2.new(0.5, 0, 0, 28)
+tabSettingBtn.Position = UDim2.new(0.5, 0, 0, 30)
+tabSettingBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+tabSettingBtn.Text = "SETTING / CÀI ĐẶT"
+tabSettingBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+tabSettingBtn.TextSize = 11
+tabSettingBtn.Font = Enum.Font.SourceSansBold
+tabSettingBtn.Parent = frame
+
+-- Container cho Tab Main
+local mainContainer = Instance.new("ScrollingFrame")
+mainContainer.Size = UDim2.new(1, 0, 0, 280)
+mainContainer.Position = UDim2.new(0, 0, 0, 60)
+mainContainer.BackgroundTransparency = 1
+mainContainer.BorderSizePixel = 0
+mainContainer.CanvasSize = UDim2.new(0, 0, 0, 310)
+mainContainer.Visible = true
+mainContainer.Parent = frame
+
+-- Container cho Tab Setting
+local settingContainer = Instance.new("ScrollingFrame")
+settingContainer.Size = UDim2.new(1, 0, 0, 280)
+settingContainer.Position = UDim2.new(0, 0, 0, 60)
+settingContainer.BackgroundTransparency = 1
+settingContainer.BorderSizePixel = 0
+settingContainer.CanvasSize = UDim2.new(0, 0, 0, 280)
+settingContainer.Visible = false
+settingContainer.Parent = frame
+
+-- Chuyển đổi giữa 2 Tab
+tabMainBtn.MouseButton1Click:Connect(function()
+    mainContainer.Visible = true
+    settingContainer.Visible = false
+    tabMainBtn.BackgroundColor3 = Color3.fromRGB(0, 122, 255)
+    tabSettingBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+end)
+
+tabSettingBtn.MouseButton1Click:Connect(function()
+    mainContainer.Visible = false
+    settingContainer.Visible = true
+    tabSettingBtn.BackgroundColor3 = Color3.fromRGB(0, 122, 255)
+    tabMainBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+end)
+
+-- Hàm tạo nút bấm tiện ích chung
+local function createGenericBtn(parent, text, posX, posY, width, height, color)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(0, width, 0, height)
+    btn.Position = UDim2.new(0, posX, 0, posY)
+    btn.BackgroundColor3 = color
+    btn.Text = text
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.TextSize = 11
+    btn.Font = Enum.Font.SourceSans
+    btn.Parent = parent
+    
+    local c = Instance.new("UICorner")
+    c.CornerRadius = UDim.new(0, 6)
+    c.Parent = btn
+    return btn
+end
+
+-- ==================== TAB MAIN CONTENT ====================
+local function createCheckbox(parent, text, posY, getStateCallback, setStateCallback)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(0, 45, 0, 30)
+    btn.Position = UDim2.new(0.05, 0, 0, posY)
+    btn.BackgroundColor3 = Color3.fromRGB(0, 168, 107)
+    btn.Text = "✓ " .. text
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.TextSize = 11
+    btn.Font = Enum.Font.SourceSansBold
+    btn.Parent = parent
+
+    local c = Instance.new("UICorner")
+    c.CornerRadius = UDim.new(0, 6)
+    c.Parent = btn
+
+    btn.MouseButton1Click:Connect(function()
+        local newState = not getStateCallback()
+        setStateCallback(newState)
+        if newState then
+            btn.BackgroundColor3 = Color3.fromRGB(0, 168, 107)
+            btn.Text = "✓ " .. text
+        else
+            btn.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+            btn.Text = "X " .. text
+        end
+    end)
+    return btn
+end
+
+-- 3 Vị Trí Teleport (Hạ thấp 1 đơn vị)
+createCheckbox(mainContainer, "VT1", 10, function() return use1 end, function(v) use1 = v end)
+local btn1 = createGenericBtn(mainContainer, "Save Pos 1 / Lưu VT 1", 60, 10, 160, 30, Color3.fromRGB(0, 122, 255))
+
+createCheckbox(mainContainer, "VT2", 48, function() return use2 end, function(v) use2 = v end)
+local btn2 = createGenericBtn(mainContainer, "Save Pos 2 / Lưu VT 2", 60, 48, 160, 30, Color3.fromRGB(0, 122, 255))
+
+createCheckbox(mainContainer, "VT3", 86, function() return use3 end, function(v) use3 = v end)
+local btn3 = createGenericBtn(mainContainer, "Save Pos 3 / Lưu VT 3", 60, 86, 160, 30, Color3.fromRGB(0, 122, 255))
+
+local btnAuto = createGenericBtn(mainContainer, "Auto Tele 3 Pos / Bật Auto 3 Chỗ", 12, 126, 210, 32, Color3.fromRGB(0, 168, 107))
+
+-- Spectate Player
+local specBox = Instance.new("TextBox")
+specBox.Size = UDim2.new(0, 130, 0, 30)
+specBox.Position = UDim2.new(0, 12, 0, 168)
+specBox.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+specBox.PlaceholderText = "Player name / Tên..."
+specBox.Text = ""
+specBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+specBox.TextSize = 11
+specBox.Font = Enum.Font.SourceSans
+specBox.Parent = mainContainer
+
+local specBoxCorner = Instance.new("UICorner")
+specBoxCorner.CornerRadius = UDim.new(0, 6)
+specBoxCorner.Parent = specBox
+
+local btnSpec = createGenericBtn(mainContainer, "Spectate: OFF", 150, 168, 72, 30, Color3.fromRGB(180, 100, 0))
+
+-- Fly Hack Toggle
+local btnFly = createGenericBtn(mainContainer, "Fly (Loadstring): OFF", 12, 206, 210, 32, Color3.fromRGB(180, 100, 0))
+
+
+-- ==================== TAB SETTING CONTENT ====================
+-- Speed Hack Box (15 - 500)
+local speedBox = Instance.new("TextBox")
+speedBox.Size = UDim2.new(0, 110, 0, 30)
+speedBox.Position = UDim2.new(0, 12, 0, 10)
+speedBox.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+speedBox.PlaceholderText = "Speed (15-500)"
+speedBox.Text = "50"
+speedBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+speedBox.TextSize = 11
+speedBox.Font = Enum.Font.SourceSans
+speedBox.Parent = settingContainer
+
+local sCorner = Instance.new("UICorner")
+sCorner.CornerRadius = UDim.new(0, 6)
+sCorner.Parent = speedBox
+
+local btnSpeed = createGenericBtn(settingContainer, "Speed: OFF", 130, 10, 92, 30, Color3.fromRGB(180, 100, 0))
+
+-- Noclip Toggle
+local btnNoclip = createGenericBtn(settingContainer, "Noclip: OFF", 12, 50, 210, 32, Color3.fromRGB(180, 100, 0))
+
+-- Anti-AFK Toggle
+local btnAfk = createGenericBtn(settingContainer, "Anti-AFK / Chống AFK: OFF", 12, 90, 210, 32, Color3.fromRGB(180, 100, 0))
+
+-- Nút Thu Gọn Menu
+local btnClose = createGenericBtn(settingContainer, "Minimize / Thu Gọn Menu", 12, 135, 210, 32, Color3.fromRGB(100, 100, 100))
+
+
+-- ==================== LOGIC XỬ LÝ CHỨC NĂNG ====================
+
+openBtn.MouseButton1Click:Connect(function()
+    frame.Visible = not frame.Visible
+end)
+
+btnClose.MouseButton1Click:Connect(function()
+    frame.Visible = false
+end)
+
+-- Lưu Tọa Độ
+btn1.MouseButton1Click:Connect(function()
+    local char = player.Character
+    if char and char:FindFirstChild("HumanoidRootPart") then
+        pos1 = char.HumanoidRootPart.CFrame - Vector3.new(0, 1, 0)
+        btn1.Text = "Saved Pos 1 ✓"
+    end
+end)
+
+btn2.MouseButton1Click:Connect(function()
+    local char = player.Character
+    if char and char:FindFirstChild("HumanoidRootPart") then
+        pos2 = char.HumanoidRootPart.CFrame - Vector3.new(0, 1, 0)
+        btn2.Text = "Saved Pos 2 ✓"
+    end
+end)
+
+btn3.MouseButton1Click:Connect(function()
+    local char = player.Character
+    if char and char:FindFirstChild("HumanoidRootPart") then
+        pos3 = char.HumanoidRootPart.CFrame - Vector3.new(0, 1, 0)
+        btn3.Text = "Saved Pos 3 ✓"
+    end
+end)
+
+-- Vòng lặp Auto Teleport
+btnAuto.MouseButton1Click:Connect(function()
+    if not pos1 or not pos2 or not pos3 then
+        btnAuto.Text = "Missing 3 Positions! / Thiếu vị trí!"
+        task.wait(1)
+        btnAuto.Text = isTeleporting and "Stop Auto" or "Auto Tele 3 Pos / Bật Auto"
+        return
+    end
+
+    isTeleporting = not isTeleporting
+    if isTeleporting then
+        btnAuto.Text = "Running Auto... / Đang chạy..."
+        btnAuto.BackgroundColor3 = Color3.fromRGB(255, 140, 0)
+        
+        task.spawn(function()
+            while isTeleporting do
+                pcall(function()
+                    local char = player.Character
+                    if char and char:FindFirstChild("HumanoidRootPart") and char:FindFirstChild("Humanoid") and char.Humanoid.Health > 0 then
+                        local root = char.HumanoidRootPart
+                        if use1 and pos1 then
+                            root.CFrame = pos1
+                            task.wait(0.12)
+                        end
+                        if not isTeleporting then return end
+                        
+                        char = player.Character
+                        if use2 and pos2 and char and char:FindFirstChild("HumanoidRootPart") and char:FindFirstChild("Humanoid") and char.Humanoid.Health > 0 then
+                            char.HumanoidRootPart.CFrame = pos2
+                            task.wait(0.12)
+                        end
+                        if not isTeleporting then return end
+
+                        char = player.Character
+                        if use3 and pos3 and char and char:FindFirstChild("HumanoidRootPart") and char:FindFirstChild("Humanoid") and char.Humanoid.Health > 0 then
+                            char.HumanoidRootPart.CFrame = pos3
+                            task.wait(0.12)
+                        end
+                    end
+                end)
+                task.wait(0.03)
+            end
+        end)
+    else
+        btnAuto.Text = "Auto Tele 3 Pos / Bật Auto"
+        btnAuto.BackgroundColor3 = Color3.fromRGB(0, 168, 107)
+    end
+end)
+
+-- Spectate Player
+btnSpec.MouseButton1Click:Connect(function()
+    local targetName = specBox.Text:lower()
+    local foundTarget = nil
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p.Name:lower():sub(1, #targetName) == targetName or p.DisplayName:lower():sub(1, #targetName) == targetName then
+            foundTarget = p
+            break
+        end
+    end
+
+    if not foundTarget and not isSpectating then
+        btnSpec.Text = "Not Found!"
+        task.wait(1)
+        btnSpec.Text = "Spectate: OFF"
+        return
+    end
+
+    isSpectating = not isSpectating
+    if isSpectating and foundTarget then
+        spectatingTarget = foundTarget
+        btnSpec.Text = "Viewing"
+        btnSpec.BackgroundColor3 = Color3.fromRGB(40, 167, 69)
+        
+        task.spawn(function()
+            while isSpectating and spectatingTarget and spectatingTarget.Character and spectatingTarget.Character:FindFirstChild("Humanoid") do
+                workspace.CurrentCamera.CameraSubject = spectatingTarget.Character.Humanoid
+                RunService.RenderStepped:Wait()
+            end
+            if player.Character and player.Character:FindFirstChild("Humanoid") then
+                workspace.CurrentCamera.CameraSubject = player.Character.Humanoid
+            end
+        end)
+    else
+        isSpectating = false
+        spectatingTarget = nil
+        btnSpec.Text = "Spectate: OFF"
+        btnSpec.BackgroundColor3 = Color3.fromRGB(180, 100, 0)
+        if player.Character and player.Character:FindFirstChild("Humanoid") then
+            workspace.CurrentCamera.CameraSubject = player.Character.Humanoid
+        end
+    end
+end)
+
+-- Speed Hack (15 - 500)
+btnSpeed.MouseButton1Click:Connect(function()
+    isSpeedActive = not isSpeedActive
+    if isSpeedActive then
+        local val = tonumber(speedBox.Text)
+        if val then
+            if val < 15 then val = 15 end
+            if val > 500 then val = 500 end
+            speedValue = val
+        end
+        btnSpeed.Text = "Speed: ON"
+        btnSpeed.BackgroundColor3 = Color3.fromRGB(40, 167, 69)
+        
+        task.spawn(function()
+            while isSpeedActive do
+                pcall(function()
+                    local char = player.Character
+                    if char and char:FindFirstChild("Humanoid") then
+                        char.Humanoid.WalkSpeed = speedValue
+                    end
+                end)
+                task.wait(0.2)
+            end
+        end)
+    else
+        btnSpeed.Text = "Speed: OFF"
+        btnSpeed.BackgroundColor3 = Color3.fromRGB(180, 100, 0)
+        pcall(function()
+            if player.Character and player.Character:FindFirstChild("Humanoid") then
+                player.Character.Humanoid.WalkSpeed = 16
+            end
+        end)
+    end
+end)
+
+-- Noclip
+btnNoclip.MouseButton1Click:Connect(function()
+    isNoclipActive = not isNoclipActive
+    if isNoclipActive then
+        btnNoclip.Text = "Noclip: ON"
+        btnNoclip.BackgroundColor3 = Color3.fromRGB(40, 167, 69)
+    else
+        btnNoclip.Text = "Noclip: OFF"
+        btnNoclip.BackgroundColor3 = Color3.fromRGB(180, 100, 0)
+    end
+end)
+
+RunService.Stepped:Connect(function()
+    if isNoclipActive then
+        pcall(function()
+            local char = player.Character
+            if char then
+                for _, part in ipairs(char:GetDescendants()) do
+                    if part:IsA("BasePart") then
+                        part.CanCollide = false
+                    end
+                end
+            end
+        end)
+    end
+end)
+
+-- Fly Loadstring V2/V3 Integration
+btnFly.MouseButton1Click:Connect(function()
+    isFlyActive = not isFlyActive
+    
+    if isFlyActive then
+        btnFly.Text = "Fly: ON"
+        btnFly.BackgroundColor3 = Color3.fromRGB(40, 167, 69)
+        
+        pcall(function()
+            if not flyControl then
+                flyControl = loadstring(game:HttpGet("https://raw.githubusercontent.com/XNEOFF/FlyV3/main/flyv3.txt"))()
+            else
+                flyControl:Resume()
+            end
+        end)
+    else
+        btnFly.Text = "Fly: OFF"
+        btnFly.BackgroundColor3 = Color3.fromRGB(180, 100, 0)
+        pcall(function()
+            if flyControl then
+                flyControl:Pause()
+            end
+        end)
+    end
+end)
+
+-- Chống AFK / Anti-AFK
+btnAfk.MouseButton1Click:Connect(function()
+    isAfkActive = not isAfkActive
+    if isAfkActive then
+        btnAfk.Text = "Anti-AFK: ON"
+        btnAfk.BackgroundColor3 = Color3.fromRGB(40, 167, 69)
+        task.spawn(function()
+            local vu = game:GetService("VirtualUser")
+            player.Idled:Connect(function()
+                if isAfkActive then
+                    vu:Button2Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+                    task.wait(1)
+                    vu:Button2Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+                end
+            end)
+        end)
+    else
+        btnAfk.Text = "Anti-AFK: OFF"
+        btnAfk.BackgroundColor3 = Color3.fromRGB(180, 100, 0)
+    end
+end)
