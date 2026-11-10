@@ -1,0 +1,350 @@
+-- [[ Script sinh viên cho ae sài nè 😎 (toichimuoncc) ]] --
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Lighting = game:GetService("Lighting")
+local player = Players.LocalPlayer
+
+-- 1. Anti-Cheat & Anti-Kick Bypass mạnh mẽ
+pcall(function()
+    if getgenv then getgenv().SecureMode = true end
+    local mt = getrawmetatable(game)
+    setreadonly(mt, false)
+    local old = mt.__namecall
+    mt.__namecall = newcclosure(function(self, ...)
+        local method = getnamecallmethod()
+        if method == "Kick" and self == player then return end
+        return old(self, ...)
+    end)
+    setreadonly(mt, true)
+end)
+
+-- Xóa UI cũ nếu có
+pcall(function()
+    if player.PlayerGui:FindFirstChild("ToichimuonccSinhVienHub") then
+        player.PlayerGui.ToichimuonccSinhVienHub:Destroy()
+    end
+end)
+
+-- Trạng thái tính năng
+local isNoclipActive = false
+local isFlyActive = false
+local isFullbrightActive = false
+local isEspPlayerActive = false
+local currentSpeed = 16
+
+-- Biến Fly và Trạng thái bấm Lên/Xuống
+local flyGyro, flyVel = nil, nil
+local flyConn = nil
+local flyUpPressed, flyDownPressed = false, false
+
+-- Tải sẵn script từ ScriptBlox theo yêu cầu
+pcall(function()
+    loadstring(game:HttpGet("https://scriptblox.com"))()
+end)
+
+-- 2. Giao Diện ScreenGui (Menu xuất hiện chính giữa màn hình)
+local sg = Instance.new("ScreenGui")
+sg.Name = "ToichimuonccSinhVienHub"
+sg.ResetOnSpawn = false
+sg.Parent = player:WaitForChild("PlayerGui")
+
+-- Nút Tròn Mở/Đóng Menu
+local openBtn = Instance.new("TextButton")
+openBtn.Name = "OpenButton"
+openBtn.Size = UDim2.new(0, 48, 0, 48)
+openBtn.Position = UDim2.new(0.02, 0, 0.5, -24)
+openBtn.BackgroundColor3 = Color3.fromRGB(0, 120, 255)
+openBtn.Text = "HUB"
+openBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+openBtn.TextSize, openBtn.Font = 11, Enum.Font.SourceSansBold
+openBtn.Active, openBtn.Draggable = true, true
+openBtn.Parent = sg
+
+local cOpen = Instance.new("UICorner") cOpen.CornerRadius = UDim.new(1, 0) cOpen.Parent = openBtn
+local strokeOpen = Instance.new("UIStroke") strokeOpen.Color = Color3.fromRGB(255, 255, 255) strokeOpen.Thickness = 2 strokeOpen.Parent = openBtn
+
+-- Khung Menu Chính (Canh giữa màn hình)
+local frame = Instance.new("Frame")
+frame.Name = "MainFrame"
+frame.Size = UDim2.new(0, 380, 0, 210)
+frame.AnchorPoint = Vector2.new(0.5, 0.5)
+frame.Position = UDim2.new(0.5, 0, 0.5, 0)
+frame.BackgroundColor3 = Color3.fromRGB(15, 18, 25)
+frame.BorderSizePixel = 0
+frame.Active, frame.Draggable, frame.Visible = true, true, true
+frame.Parent = sg
+
+local cFrame = Instance.new("UICorner") cFrame.CornerRadius = UDim.new(0, 10) cFrame.Parent = frame
+local strokeFrame = Instance.new("UIStroke") strokeFrame.Color = Color3.fromRGB(0, 150, 255) strokeFrame.Thickness = 1.5 strokeFrame.Parent = frame
+
+-- Tiêu đề Menu
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, 0, 0, 30)
+title.BackgroundColor3 = Color3.fromRGB(22, 28, 40)
+title.Text = "  Script sinh viên cho ae sài nè 😎 (toichimuoncc)"
+title.TextColor3 = Color3.fromRGB(180, 220, 255)
+title.TextSize, title.Font = 10, Enum.Font.SourceSansBold
+title.TextXAlignment = Enum.TextXAlignment.Left
+title.Parent = frame
+
+local cTitle = Instance.new("UICorner") cTitle.CornerRadius = UDim.new(0, 10) cTitle.Parent = title
+
+local closeX = Instance.new("TextButton")
+closeX.Size = UDim2.new(0, 30, 0, 30)
+closeX.Position = UDim2.new(1, -32, 0, 0)
+closeX.BackgroundTransparency = 1
+closeX.Text = "X"
+closeX.TextColor3 = Color3.fromRGB(255, 80, 80)
+closeX.TextSize, closeX.Font = 13, Enum.Font.SourceSansBold
+closeX.Parent = frame
+
+closeX.MouseButton1Click:Connect(function() frame.Visible = false end)
+openBtn.MouseButton1Click:Connect(function() frame.Visible = not frame.Visible end)
+
+-- Khung chứa danh sách nút bấm
+local contentHolder = Instance.new("ScrollingFrame")
+contentHolder.Size = UDim2.new(1, -16, 1, -40)
+contentHolder.Position = UDim2.new(0, 8, 0, 36)
+contentHolder.BackgroundTransparency = 1
+contentHolder.CanvasSize = UDim2.new(0, 0, 0, 220)
+contentHolder.ScrollBarThickness = 3
+contentHolder.Parent = frame
+
+local layout = Instance.new("UIGridLayout")
+layout.CellSize = UDim2.new(0, 114, 0, 36)
+layout.CellPadding = UDim2.new(0, 6, 0, 6)
+layout.Parent = contentHolder
+
+local function createBtn(text, color)
+    local btn = Instance.new("TextButton")
+    btn.BackgroundColor3 = color
+    btn.Text = text
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.TextSize, btn.Font = 11, Enum.Font.SourceSansBold
+    btn.Parent = contentHolder
+    
+    local c = Instance.new("UICorner") c.CornerRadius = UDim.new(0, 6) c.Parent = btn
+    local stroke = Instance.new("UIStroke") stroke.Color = Color3.fromRGB(255, 255, 255) stroke.Transparency = 0.5 stroke.Parent = btn
+    return btn
+end
+
+-- 3. Tạo Các Nút Chức Năng
+local btnNoclip = createBtn("Noclip: OFF", Color3.fromRGB(150, 50, 50))
+local btnFlyV2 = createBtn("Joystick Fly: OFF", Color3.fromRGB(180, 100, 0))
+local btnFlyUp = createBtn("Bay Lên (UP)", Color3.fromRGB(0, 150, 100))
+local btnFlyDown = createBtn("Hạ Xuống (DOWN)", Color3.fromRGB(150, 100, 50))
+local btnEspPlayer = createBtn("Blue ESP: OFF", Color3.fromRGB(0, 100, 200))
+local btnFullbright = createBtn("Fullbright: OFF", Color3.fromRGB(100, 50, 180))
+local btnSpeed16 = createBtn("Speed: 16", Color3.fromRGB(50, 150, 50))
+local btnSpeed50 = createBtn("Speed: 50", Color3.fromRGB(50, 150, 50))
+local btnSpeed100 = createBtn("Speed: 100", Color3.fromRGB(150, 100, 0))
+
+-- Giữ nút Bay Lên / Hạ Xuống
+btnFlyUp.MouseButton1Down:Connect(function() flyUpPressed = true end)
+btnFlyUp.MouseButton1Up:Connect(function() flyUpPressed = false end)
+btnFlyDown.MouseButton1Down:Connect(function() flyDownPressed = true end)
+btnFlyDown.MouseButton1Up:Connect(function() flyDownPressed = false end)
+
+-- 4. Logic Noclip
+btnNoclip.MouseButton1Click:Connect(function()
+    isNoclipActive = not isNoclipActive
+    btnNoclip.Text = isNoclipActive and "Noclip: ON" or "Noclip: OFF"
+    btnNoclip.BackgroundColor3 = isNoclipActive and Color3.fromRGB(50, 180, 50) or Color3.fromRGB(150, 50, 50)
+end)
+
+RunService.Stepped:Connect(function()
+    if isNoclipActive then
+        pcall(function()
+            local char = player.Character
+            if char then
+                for _, part in ipairs(char:GetDescendants()) do
+                    if part:IsA("BasePart") then part.CanCollide = false end
+                end
+            end
+        end)
+    end
+end)
+
+-- 5. Logic Joystick Fly + Nút UP/DOWN
+btnFlyV2.MouseButton1Click:Connect(function()
+    isFlyActive = not isFlyActive
+    btnFlyV2.Text = isFlyActive and "Joystick Fly: ON" or "Joystick Fly: OFF"
+    btnFlyV2.BackgroundColor3 = isFlyActive and Color3.fromRGB(50, 180, 50) or Color3.fromRGB(180, 100, 0)
+    
+    local char = player.Character
+    if not char then return end
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    
+    if isFlyActive then
+        if hum then hum.PlatformStand = true end
+        if flyConn then flyConn:Disconnect() end
+        
+        flyGyro = Instance.new("BodyGyro")
+        flyGyro.P = 9e4
+        flyGyro.MaxTorque = Vector3.new(9e4, 9e4, 9e4)
+        flyGyro.CFrame = hrp.CFrame
+        flyGyro.Parent = hrp
+        
+        flyVel = Instance.new("BodyVelocity")
+        flyVel.Velocity = Vector3.new(0, 0, 0)
+        flyVel.MaxForce = Vector3.new(9e4, 9e4, 9e4)
+        flyVel.Parent = hrp
+        
+        flyConn = RunService.RenderStepped:Connect(function()
+            pcall(function()
+                local cam = workspace.CurrentCamera
+                if hrp and cam and flyVel and flyGyro then
+                    flyGyro.CFrame = cam.CFrame
+                    local moveDir = hum and hum.MoveDirection or Vector3.new(0,0,0)
+                    local speed = 50
+                    local yVel = 0.1
+                    
+                    if flyUpPressed then
+                        yVel = speed
+                    elseif flyDownPressed then
+                        yVel = -speed
+                    end
+                    
+                    if moveDir.Magnitude > 0 then
+                        hrp.CFrame = hrp.CFrame + (moveDir * (speed * 0.05))
+                    end
+                    flyVel.Velocity = Vector3.new(0, yVel, 0)
+                end
+            end)
+        end)
+    else
+        if flyConn then flyConn:Disconnect() flyConn = nil end
+        if flyGyro then flyGyro:Destroy() flyGyro = nil end
+        if flyVel then flyVel:Destroy() flyVel = nil end
+        if hum then hum.PlatformStand = false end
+    end
+end)
+
+-- 6. Logic Blue ESP Player + Khoảng cách (m) + Cảnh báo Khổng Lồ
+btnEspPlayer.MouseButton1Click:Connect(function()
+    isEspPlayerActive = not isEspPlayerActive
+    btnEspPlayer.Text = isEspPlayerActive and "Blue ESP: ON" or "Blue ESP: OFF"
+    btnEspPlayer.BackgroundColor3 = isEspPlayerActive and Color3.fromRGB(50, 180, 50) or Color3.fromRGB(0, 100, 200)
+    
+    task.spawn(function()
+        while isEspPlayerActive do
+            pcall(function()
+                local myChar = player.Character
+                local myHrp = myChar and myChar:FindFirstChild("HumanoidRootPart")
+                
+                for _, p in ipairs(Players:GetPlayers()) do
+                    if p ~= player and p.Character then
+                        local char = p.Character
+                        local hrp = char:FindFirstChild("HumanoidRootPart")
+                        
+                        if hrp then
+                            if not char:FindFirstChild("HL_BlueEsp") then
+                                local hl = Instance.new("Highlight")
+                                hl.Name = "HL_BlueEsp"
+                                hl.Adornee = char
+                                hl.FillColor = Color3.fromRGB(0, 120, 255)
+                                hl.FillTransparency = 0.4
+                                hl.OutlineColor = Color3.fromRGB(255, 255, 255)
+                                hl.Parent = char
+                            end
+                            
+                            local dist = myHrp and math.floor((hrp.Position - myHrp.Position).Magnitude) or 0
+                            local isGiant = (hrp.Size.Y > 3.5)
+                            
+                            local bg = hrp:FindFirstChild("BlueEspTag")
+                            if not bg then
+                                bg = Instance.new("BillboardGui")
+                                bg.Name = "BlueEspTag"
+                                bg.Size = UDim2.new(0, 140, 0, 50)
+                                bg.StudsOffset = Vector3.new(0, 3.5, 0)
+                                bg.AlwaysOnTop = true
+                                bg.Parent = hrp
+                                
+                                local lbl = Instance.new("TextLabel")
+                                lbl.Name = "EspText"
+                                lbl.Size = UDim2.new(1, 0, 1, 0)
+                                lbl.BackgroundTransparency = 1
+                                lbl.TextColor3 = Color3.fromRGB(0, 180, 255)
+                                lbl.TextSize = 12
+                                lbl.Font = Enum.Font.SourceSansBold
+                                lbl.TextStrokeTransparency = 0.5
+                                lbl.Parent = bg
+                            end
+                            
+                            local tagText = p.Name .. "\n" .. dist .. "m"
+                            if isGiant then
+                                tagText = "🔵 KHỔNG LỒ\n" .. p.Name .. " (" .. dist .. "m)"
+                            end
+                            
+                            if bg:FindFirstChild("EspText") then
+                                bg.EspText.Text = tagText
+                                bg.EspText.TextColor3 = isGiant and Color3.fromRGB(0, 255, 255) or Color3.fromRGB(100, 200, 255)
+                            end
+                        end
+                    end
+                end
+            end)
+            task.wait(0.5)
+        end
+        pcall(function()
+            for _, p in ipairs(Players:GetPlayers()) do
+                if p.Character then
+                    if p.Character:FindFirstChild("HL_BlueEsp") then p.Character.HL_BlueEsp:Destroy() end
+                    local hrp = p.Character:FindFirstChild("HumanoidRootPart")
+                    if hrp and hrp:FindFirstChild("BlueEspTag") then hrp.BlueEspTag:Destroy() end
+                end
+            end
+        end)
+    end)
+end)
+
+-- 7. Logic Fullbright
+btnFullbright.MouseButton1Click:Connect(function()
+    isFullbrightActive = not isFullbrightActive
+    btnFullbright.Text = isFullbrightActive and "Fullbright: ON" or "Fullbright: OFF"
+    btnFullbright.BackgroundColor3 = isFullbrightActive and Color3.fromRGB(50, 180, 50) or Color3.fromRGB(100, 50, 180)
+end)
+
+RunService.RenderStepped:Connect(function()
+    if isFullbrightActive then
+        Lighting.Brightness = 2
+        Lighting.ClockTime = 14
+        Lighting.FogEnd = 100000
+        Lighting.GlobalShadows = false
+    else
+        Lighting.Brightness = 1
+        Lighting.ClockTime = 0
+        Lighting.GlobalShadows = true
+    end
+end)
+
+-- 8. Logic WalkSpeed
+local function applySpeed(val)
+    currentSpeed = val
+    btnSpeed16.BackgroundColor3 = (val == 16) and Color3.fromRGB(50, 180, 50) or Color3.fromRGB(50, 150, 50)
+    btnSpeed50.BackgroundColor3 = (val == 50) and Color3.fromRGB(50, 180, 50) or Color3.fromRGB(50, 150, 50)
+    btnSpeed100.BackgroundColor3 = (val == 100) and Color3.fromRGB(50, 180, 50) or Color3.fromRGB(150, 100, 0)
+    
+    pcall(function()
+        if player.Character and player.Character:FindFirstChild("Humanoid") then
+            player.Character.Humanoid.WalkSpeed = val
+        end
+    end)
+end
+
+btnSpeed16.MouseButton1Click:Connect(function() applySpeed(16) end)
+btnSpeed50.MouseButton1Click:Connect(function() applySpeed(50) end)
+btnSpeed100.MouseButton1Click:Connect(function() applySpeed(100) end)
+
+RunService.Heartbeat:Connect(function()
+    pcall(function()
+        local char = player.Character
+        if char then
+            local hum = char:FindFirstChildOfClass("Humanoid")
+            if hum and hum.WalkSpeed ~= currentSpeed then
+                hum.WalkSpeed = currentSpeed
+            end
+        end
+    end)
+end)
